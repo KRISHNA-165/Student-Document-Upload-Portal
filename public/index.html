@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AcademiaFlow · Student Document Upload & Approval Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ================= TOP GLOBAL NAVBAR ================= -->
+  <header class="af-navbar">
+    <div class="af-nav-container">
+      <div class="af-brand" id="brandLogo" role="button" tabindex="0" title="Go to AcademiaFlow Home">
+        <svg class="af-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"/>
+          <path d="M4 18h16"/>
+          <path d="M6 18v-7"/>
+          <path d="M10 18v-7"/>
+          <path d="M14 18v-7"/>
+          <path d="M18 18v-7"/>
+          <path d="m12 2 10 5H2z"/>
+        </svg>
+        <span class="af-brand-name">AcademiaFlow</span>
+      </div>
+
+      <!-- Right Nav Controls -->
+      <div class="af-nav-right">
+        <!-- Visible when user is logged in -->
+        <div class="af-auth-bar hidden" id="authNavControls">
+          <div class="user-profile-badge" id="userProfileBadge">
+            <div class="avatar" id="userAvatar">JD</div>
+            <div class="user-info">
+              <span class="user-name" id="userName">John Doe</span>
+              <span class="user-role" id="userRole">Student (STU-2024-001)</span>
+            </div>
+          </div>
+          <div class="role-selector-wrap">
+            <select id="roleSelect" class="form-select-sm" aria-label="Switch persona">
+              <option value="STU-2024-001">Student: John Doe</option>
+              <option value="STU-2024-002">Student: Jane Smith</option>
+              <option value="FAC-101">Faculty Advisor: Dr. Robert Smith</option>
+            </select>
+          </div>
+          <button type="button" class="af-nav-btn af-btn-outline" id="btnSignOut">Sign Out</button>
+        </div>
+
+        <!-- Visible when on landing page -->
+        <div class="af-guest-bar" id="guestNavControls">
+          <button type="button" class="af-btn-login" id="btnNavLogin">Login</button>
+          <button type="button" class="af-btn-menu" id="btnNavMenu" aria-label="Toggle Navigation">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: LANDING PAGE ================= -->
+  <div id="landingView" class="view-section">
+    <!-- Hero Section -->
+    <section class="af-hero-section">
+      <div class="af-hero-inner">
+        <h1 class="af-hero-title">Student Document<br>Upload & Approval<br>Portal</h1>
+        <p class="af-hero-sub">Upload. Verify. Approve. Store. A seamless, secure, and unified platform for managing academic records, designed specifically for higher education institutions.</p>
+
+        <!-- Role Login CTA Stack -->
+        <div class="af-cta-stack">
+          <button type="button" class="af-btn af-btn-dark af-btn-block" id="btnCtaStudent">
+            <span class="btn-icon">🎓</span> Student Login
+          </button>
+          <button type="button" class="af-btn af-btn-light af-btn-block" id="btnCtaFaculty">
+            <span class="btn-icon">👨‍🏫</span> Faculty Login
+          </button>
+          <button type="button" class="af-btn af-btn-light af-btn-block" id="btnCtaAdmin">
+            <span class="btn-icon">🛡️</span> Admin Login
+          </button>
+        </div>
+
+        <!-- Isometric 3D Graphic -->
+        <div class="af-hero-graphic">
+          <div class="isometric-canvas">
+            <div class="iso-plane p1">
+              <div class="iso-node active">
+                <span class="dot"></span>
+                <span class="label">Certificate.pdf</span>
+              </div>
+            </div>
+            <div class="iso-plane p2">
+              <div class="iso-node">
+                <span class="dot blue"></span>
+                <span class="label">Verification</span>
+              </div>
+            </div>
+            <div class="iso-plane p3">
+              <div class="iso-node">
+                <span class="dot green"></span>
+                <span class="label">Secure Vault</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Platform Capabilities -->
+    <section class="af-capabilities-section">
+      <div class="af-container">
+        <div class="section-heading text-center">
+          <h2>Core Platform Capabilities</h2>
+          <p class="section-sub">Enterprise-grade tools built to streamline administrative workflows and ensure compliance.</p>
+        </div>
+
+        <div class="af-capabilities-grid">
+          <!-- Card 1 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Uncompromised Security</h3>
+            <p>Bank-level encryption ensures sensitive student records are protected at rest and in transit.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <h3>Total Transparency</h3>
+            <p>Real-time status tracking and audit logs provide visibility into every step of the approval process.</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <h3>Workflow Efficiency</h3>
+            <p>Automated routing and instant notifications reduce manual bottlenecks and speed up decision times.</p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <h3>Centralized Storage</h3>
+            <p>A single, secure repository for all academic records, accessible instantly by authorized personnel.</p>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3>Role-Based Access</h3>
+            <p>Granular permissions ensure students, faculty, and admins only see what they need to see.</p>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="af-capability-card">
+            <div class="cap-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <h3>Comprehensive Reporting</h3>
+            <p>Generate detailed insights on processing times, document volumes, and system usage.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The Approval Lifecycle -->
+    <section class="af-lifecycle-section">
+      <div class="af-container">
+        <div class="section-heading text-center">
+          <h2>The Approval Lifecycle</h2>
+          <p class="section-sub">A streamlined, traceable process from submission to secure archive.</p>
+        </div>
+
+        <div class="af-lifecycle-steps">
+          <!-- Step 1 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">1</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <h4>Register</h4>
+            <p>Secure account creation.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">2</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <h4>Fill Details</h4>
+            <p>Input required metadata.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">3</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <h4>Upload</h4>
+            <p>Submit digital copies.</p>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">4</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <h4>Review</h4>
+            <p>Faculty verification.</p>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">5</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <h4>Approval</h4>
+            <p>Final admin sign-off.</p>
+          </div>
+
+          <!-- Step 6 -->
+          <div class="af-step-item">
+            <div class="step-badge">
+              <span class="step-num">6</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            </div>
+            <h4>Archive</h4>
+            <p>Secure permanent storage.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="af-footer">
+      <div class="af-container text-center">
+        <div class="af-brand footer-brand">
+          <svg class="af-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18"/><path d="M4 18h16"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="m12 2 10 5H2z"/>
+          </svg>
+          <span class="af-brand-name">AcademiaFlow</span>
+        </div>
+        <p class="copyright">&copy; 2024 AcademiaFlow Systems. Enterprise Academic Administration.</p>
+        <div class="footer-links">
+          <a href="#privacy">Privacy Policy</a>
+          <span>&bull;</span>
+          <a href="#terms">Terms of Service</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ================= VIEW 2: SIGN IN MODAL / PAGE ================= -->
+  <div id="signinModal" class="af-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
+    <div class="af-signin-card">
+      <button type="button" class="af-modal-close" id="btnCloseSignin" aria-label="Close">&times;</button>
+      
+      <div class="af-signin-brand">
+        <svg class="af-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 21h18"/><path d="M4 18h16"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="m12 2 10 5H2z"/>
+        </svg>
+        <span>AcademiaFlow</span>
+      </div>
+
+      <h2 id="signinTitle" class="af-signin-title">Sign in</h2>
+      <p class="af-signin-sub">Access your institutional dashboard.</p>
+
+      <!-- Role Selector Segmented Tabs -->
+      <div class="af-role-segment" role="tablist">
+        <button type="button" class="role-pill active" data-role="Student" id="pillStudent">
+          <span class="pill-icon">🎓</span> Student
+        </button>
+        <button type="button" class="role-pill" data-role="Faculty" id="pillFaculty">
+          <span class="pill-icon">👨‍🏫</span> Faculty
+        </button>
+        <button type="button" class="role-pill" data-role="Admin" id="pillAdmin">
+          <span class="pill-icon">🛡️</span> Admin
+        </button>
+      </div>
+
+      <form id="signinForm" class="af-signin-form" novalidate>
+        <div class="form-group">
+          <label for="signinEmail" class="form-label">Email or Register Number</label>
+          <div class="input-with-icon">
+            <span class="input-icon">👤</span>
+            <input
+              type="text"
+              id="signinEmail"
+              class="form-control"
+              placeholder="e.g. 2024001 or name@institution.edu"
+              value="STU-2024-001"
+              required
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="signinPassword" class="form-label">Password</label>
+          <div class="input-with-icon">
+            <span class="input-icon">🔒</span>
+            <input
+              type="password"
+              id="signinPassword"
+              class="form-control"
+              placeholder="••••••••"
+              value="password123"
+              required
+            >
+            <button type="button" class="btn-toggle-pwd" id="btnTogglePwd" aria-label="Toggle Password Visibility">👁️</button>
+          </div>
+        </div>
+
+        <div class="af-form-options">
+          <label class="remember-me">
+            <input type="checkbox" id="chkRememberMe" checked>
+            <span>Remember me</span>
+          </label>
+          <a href="#forgot" class="forgot-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="af-btn af-btn-dark af-btn-block btn-signin-submit">
+          Sign in &nbsp;&rarr;
+        </button>
+
+        <p class="af-signin-help">
+          Need help accessing your account? <a href="#support">Contact IT Support</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= VIEW 3: AUTHENTICATED PORTAL DASHBOARD ================= -->
+  <div id="portalDashboardView" class="view-section hidden">
+    <div class="portal-container">
+      <!-- Advisor Context Banner for Student -->
+      <div class="advisor-banner" id="advisorBanner">
+        <span class="info-icon">ℹ️</span>
+        <span>Assigned Faculty Advisor: <strong id="assignedAdvisorName">Dr. Robert Smith</strong> (CSE Dept). Submissions will be routed directly for verification.</span>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="nav-tabs" role="tablist">
+        <button class="tab-button active" id="tabUploadBtn" data-tab="uploadTab" role="tab" aria-selected="true">
+          📤 Upload Document
+        </button>
+        <button class="tab-button" id="tabDocumentsBtn" data-tab="documentsTab" role="tab" aria-selected="false">
+          📂 My Documents <span class="badge" id="myDocsCount">0</span>
+        </button>
+        <button class="tab-button" id="tabFacultyBtn" data-tab="facultyTab" role="tab" aria-selected="false">
+          👨‍🏫 Faculty Advisor Inbox <span class="badge badge-primary" id="facultyNotifCount">0</span>
+        </button>
+        <button class="tab-button" id="tabAuditBtn" data-tab="auditTab" role="tab" aria-selected="false">
+          📜 Audit Logs
+        </button>
+      </nav>
+
+      <!-- Global Alerts -->
+      <div id="alertContainer" class="alert-container"></div>
+
+      <!-- ================= TAB 1: UPLOAD DOCUMENT ================= -->
+      <section id="uploadTab" class="tab-panel active" role="tabpanel">
+        <div class="card upload-card">
+          <div class="card-header">
+            <h2>Upload Achievement or Internship Document</h2>
+            <p class="section-desc">Submit your certificates and records for Faculty Advisor verification. All mandatory fields must be completed before submission.</p>
+          </div>
+
+          <form id="uploadForm" class="upload-form" novalidate>
+            <div class="form-grid">
+              <!-- Field 1: Document Title -->
+              <div class="form-group full-width">
+                <label for="documentTitle" class="form-label required">
+                  Document Title
+                  <span class="char-count" id="titleCharCount">0 / 255</span>
+                </label>
+                <input
+                  type="text"
+                  id="documentTitle"
+                  name="title"
+                  class="form-control"
+                  placeholder="e.g. Full Stack Web Development Internship Certificate"
+                  maxlength="255"
+                  required
+                >
+                <div class="field-feedback" id="titleFeedback"></div>
+                <small class="field-hint">Enter a descriptive title for your document or achievement.</small>
+              </div>
+
+              <!-- Field 2: Category -->
+              <div class="form-group">
+                <label for="documentCategory" class="form-label required">Category</label>
+                <select id="documentCategory" name="category" class="form-control" required>
+                  <option value="">-- Select Category --</option>
+                  <option value="Achievement">Achievement</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Participation Certificate">Participation Certificate</option>
+                  <option value="Academic Record">Academic Record</option>
+                  <option value="Certification">Certification</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="field-feedback" id="categoryFeedback"></div>
+              </div>
+
+              <!-- Field 3: Date of Achievement -->
+              <div class="form-group">
+                <label for="dateOfAchievement" class="form-label required">Date of Achievement</label>
+                <input
+                  type="date"
+                  id="dateOfAchievement"
+                  name="dateOfAchievement"
+                  class="form-control"
+                  required
+                >
+                <div class="field-feedback" id="dateFeedback"></div>
+                <small class="field-hint">Must be on or before today's date.</small>
+              </div>
+
+              <!-- Field 4: Issuing Organization -->
+              <div class="form-group full-width">
+                <label for="issuingOrganization" class="form-label required">Issuing Organization</label>
+                <input
+                  type="text"
+                  id="issuingOrganization"
+                  name="issuingOrganization"
+                  class="form-control"
+                  placeholder="e.g. Google, Microsoft, IIT Madras, ACM Student Chapter"
+                  maxlength="200"
+                  required
+                >
+                <div class="field-feedback" id="orgFeedback"></div>
+                <small class="field-hint">The institution, university, or company issuing the certificate.</small>
+              </div>
+
+              <!-- Field 5: File Selector & Dropzone -->
+              <div class="form-group full-width">
+                <label class="form-label required">Document File</label>
+                <div class="dropzone" id="dropzone">
+                  <input
+                    type="file"
+                    id="fileInput"
+                    name="file"
+                    class="file-input-hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    required
+                  >
+                  <div class="dropzone-content" id="dropzoneContent">
+                    <div class="dropzone-icon">📁</div>
+                    <p class="dropzone-title">Drag & drop your document here, or <span class="browse-link">browse</span></p>
+                    <p class="dropzone-hints">Allowed file types: <strong>PDF, JPG, JPEG, PNG</strong> (Max size: <strong>10 MB</strong>)</p>
+                  </div>
+                  <!-- Selected file preview display -->
+                  <div class="file-preview-pill hidden" id="filePreviewPill">
+                    <span class="file-preview-icon" id="filePreviewIcon">📄</span>
+                    <div class="file-preview-info">
+                      <span class="file-name" id="previewFileName">filename.pdf</span>
+                      <span class="file-size" id="previewFileSize">1.2 MB</span>
+                    </div>
+                    <button type="button" class="btn-remove-file" id="btnRemoveFile" title="Remove file">&times;</button>
+                  </div>
+                </div>
+                <div class="field-feedback" id="fileFeedback"></div>
+              </div>
+            </div>
+
+            <!-- Validation Checklist Summary -->
+            <div class="validation-checklist">
+              <span class="checklist-title">Submission Requirements:</span>
+              <div class="checklist-items">
+                <span class="check-item" id="checkTitle">⚪ Title provided</span>
+                <span class="check-item" id="checkCategory">⚪ Category selected</span>
+                <span class="check-item" id="checkDate">⚪ Valid past/present date</span>
+                <span class="check-item" id="checkOrg">⚪ Issuing organization</span>
+                <span class="check-item" id="checkFile">⚪ Valid file (PDF/JPG/PNG &le; 10 MB)</span>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btnResetForm">Clear Form</button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="btnUpload"
+                disabled
+              >
+                <span class="btn-spinner hidden" id="uploadSpinner"></span>
+                <span class="btn-text" id="uploadBtnText">Upload Document</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: MY DOCUMENTS ================= -->
+      <section id="documentsTab" class="tab-panel" role="tabpanel">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>My Uploaded Documents</h2>
+              <p class="section-desc">Track verification status, view, download, or replace your submitted achievement documents.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshDocs">🔄 Refresh</button>
+          </div>
+
+          <div class="documents-table-wrapper">
+            <table class="documents-table" id="documentsTable">
+              <thead>
+                <tr>
+                  <th>Document Title</th>
+                  <th>Category</th>
+                  <th>Achievement Date</th>
+                  <th>Issuing Organization</th>
+                  <th>Status</th>
+                  <th>Uploaded Date & Time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="documentsTableBody">
+                <tr class="empty-row">
+                  <td colspan="7">Loading documents...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: FACULTY ADVISOR PORTAL ================= -->
+      <section id="facultyTab" class="tab-panel" role="tabpanel">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>Faculty Advisor Verification Inbox</h2>
+              <p class="section-desc">Review submitted student documents and view notifications generated by uploads.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshFaculty">🔄 Refresh</button>
+          </div>
+
+          <div class="faculty-sections">
+            <div class="subsection">
+              <h3>🔔 Recent Notifications</h3>
+              <div class="notifications-list" id="notificationsList">
+                <p class="empty-state">No notifications yet.</p>
+              </div>
+            </div>
+
+            <div class="subsection">
+              <h3>📋 Pending Submissions for Review</h3>
+              <div class="documents-table-wrapper">
+                <table class="documents-table" id="facultyDocsTable">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Title</th>
+                      <th>Category</th>
+                      <th>Achievement Date</th>
+                      <th>Status</th>
+                      <th>Submitted At</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="facultyDocsTableBody">
+                    <tr class="empty-row"><td colspan="7">No submissions yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: AUDIT LOGS ================= -->
+      <section id="auditTab" class="tab-panel" role="tabpanel">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>System Security & Audit Log</h2>
+              <p class="section-desc">Immutable audit events recorded for document uploads and replacements.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshAudit">🔄 Refresh</button>
+          </div>
+          <div class="audit-log-wrapper">
+            <table class="documents-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Actor ID</th>
+                  <th>Role</th>
+                  <th>Document ID</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody">
+                <tr class="empty-row"><td colspan="6">Loading logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal: View Document Preview -->
+  <div class="modal hidden" id="previewModal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h3 id="previewModalTitle">Document Preview</h3>
+        <button type="button" class="modal-close" id="btnClosePreview">&times;</button>
+      </div>
+      <div class="modal-body" id="previewModalBody">
+        <div class="preview-loading">Loading preview...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnClosePreviewBtn">Close</button>
+        <a href="#" class="btn btn-primary" id="btnDownloadPreview" download>⬇️ Download Document</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Replace Document -->
+  <div class="modal hidden" id="replaceModal" role="dialog" aria-modal="true" aria-labelledby="replaceModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="replaceModalTitle">Replace Document</h3>
+        <button type="button" class="modal-close" id="btnCloseReplace">&times;</button>
+      </div>
+      <form id="replaceForm" novalidate>
+        <div class="modal-body">
+          <p class="modal-intro">You can replace the attached document file or update details while the status is <strong>Pending Approval</strong>.</p>
+          <input type="hidden" id="replaceDocId" name="docId">
+
+          <div class="form-group">
+            <label for="replaceTitle" class="form-label required">Document Title</label>
+            <input type="text" id="replaceTitle" name="title" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="replaceCategory" class="form-label required">Category</label>
+            <select id="replaceCategory" name="category" class="form-control" required>
+              <option value="Achievement">Achievement</option>
+              <option value="Internship">Internship</option>
+              <option value="Participation Certificate">Participation Certificate</option>
+              <option value="Academic Record">Academic Record</option>
+              <option value="Certification">Certification</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="replaceDate" class="form-label required">Date of Achievement</label>
+            <input type="date" id="replaceDate" name="dateOfAchievement" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="replaceOrg" class="form-label required">Issuing Organization</label>
+            <input type="text" id="replaceOrg" name="issuingOrganization" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="replaceFileInput" class="form-label">New Document File (Optional if only updating details)</label>
+            <input type="file" id="replaceFileInput" name="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            <small class="field-hint">PDF, JPG, JPEG, or PNG &le; 10 MB.</small>
+            <div class="field-feedback" id="replaceFileFeedback"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelReplace">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitReplace">Confirm Replacement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Confirmation Dialog Modal -->
+  <div class="modal hidden" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header modal-header-success">
+        <h3 id="successModalTitle">🎉 Document Uploaded Successfully</h3>
+        <button type="button" class="modal-close" id="btnCloseSuccess">&times;</button>
+      </div>
+      <div class="modal-body" id="successModalBody">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btnGoToDocs">View My Documents</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+storage/documents/*
+!storage/documents/.gitkeep
+data/*.tmp
+

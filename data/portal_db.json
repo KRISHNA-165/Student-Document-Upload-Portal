@@ -1,0 +1,83 @@
+{
+  "users": [
+    {
+      "id": "STU-2024-001",
+      "name": "John Doe",
+      "email": "john.doe@university.edu",
+      "department": "Computer Science & Engineering",
+      "semester": "6th Semester",
+      "assignedFacultyAdvisorId": "FAC-101",
+      "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "role": "Student"
+    },
+    {
+      "id": "STU-2024-002",
+      "name": "Jane Smith",
+      "email": "jane.smith@university.edu",
+      "department": "Information Technology",
+      "semester": "6th Semester",
+      "assignedFacultyAdvisorId": "FAC-101",
+      "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "role": "Student"
+    },
+    {
+      "id": "FAC-101",
+      "name": "Dr. Robert Smith",
+      "email": "robert.smith@university.edu",
+      "department": "Computer Science & Engineering",
+      "role": "Faculty"
+    }
+  ],
+  "documents": [
+    {
+      "id": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
+      "studentId": "STU-2024-001",
+      "studentName": "John Doe",
+      "studentDepartment": "Computer Science & Engineering",
+      "assignedFacultyAdvisorId": "FAC-101",
+      "title": "Cloud Specialization",
+      "category": "Certification",
+      "dateOfAchievement": "2024-05-15",
+      "issuingOrganization": "AWS",
+      "originalFilename": "internship.pdf",
+      "storageKey": "e9396d86-fb84-4fc6-9871-85aa04d6a1bc.pdf",
+      "fileSize": 79,
+      "mimeType": "application/pdf",
+      "extension": ".pdf",
+      "status": "Pending Approval",
+      "createdAt": "2026-11-05T10:49:00.295Z",
+      "updatedAt": "2026-11-05T10:49:00.295Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "NOTIF-3c042481-f007-4048-8e3b-bb09bf5c3a18",
+      "recipientId": "FAC-101",
+      "senderId": "STU-2024-001",
+      "documentId": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
+      "documentTitle": "Cloud Specialization",
+      "category": "Certification",
+      "title": "New Document Submitted for Verification",
+      "message": "Student John Doe has uploaded a new document \"Cloud Specialization\" under category \"Certification\" for review.",
+      "read": false,
+      "createdAt": "2026-11-05T10:49:00.295Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "AUDIT-db3a506e-400d-409a-be09-13d39b0eeb6d",
+      "action": "DOCUMENT_UPLOAD",
+      "actorId": "STU-2024-001",
+      "actorRole": "Student",
+      "targetId": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
+      "details": {
+        "title": "Cloud Specialization",
+        "category": "Certification",
+        "originalFilename": "internship.pdf",
+        "fileSize": 79,
+        "storageKey": "e9396d86-fb84-4fc6-9871-85aa04d6a1bc.pdf"
+      },
+      "timestamp": "2026-11-05T10:49:00.295Z"
+    }
+  ]
+}
