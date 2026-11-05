@@ -9,7 +9,8 @@ class Database {
       users: [],
       documents: [],
       notifications: [],
-      auditLogs: []
+      auditLogs: [],
+      reviewHistory: []
     };
     this.init();
   }
@@ -24,7 +25,10 @@ class Database {
       try {
         const raw = fs.readFileSync(this.filePath, 'utf-8');
         this.data = JSON.parse(raw);
-        if (!this.data.users || this.data.users.length === 0) {
+        if (!this.data.reviewHistory) {
+          this.data.reviewHistory = [];
+        }
+        if (!this.data.users || this.data.users.length < 4) {
           this.seedUsers();
         }
       } catch (err) {
@@ -55,15 +59,39 @@ class Database {
         role: 'Student'
       },
       {
+        id: 'STU-2024-003',
+        name: 'Alex Rivers',
+        email: 'alex.rivers@university.edu',
+        department: 'Electronics & Communication',
+        semester: '4th Semester',
+        assignedFacultyAdvisorId: 'FAC-102',
+        assignedFacultyAdvisorName: 'Dr. Emily Davis',
+        role: 'Student'
+      },
+      {
         ...CONSTANTS.DEFAULT_FACULTY,
         role: 'Faculty'
+      },
+      {
+        id: 'FAC-102',
+        name: 'Dr. Emily Davis',
+        email: 'emily.davis@university.edu',
+        department: 'Electronics & Communication',
+        role: 'Faculty'
+      },
+      {
+        id: 'ADM-001',
+        name: 'System Administrator',
+        email: 'admin@university.edu',
+        department: 'Central Administration',
+        role: 'Admin'
       }
     ];
   }
 
   save() {
     try {
-      const tempPath = `${this.filePath}.tmp`;
+      const tempPath = `${this.filePath}.${Date.now()}-${Math.random().toString(36).substring(2)}.tmp`;
       fs.writeFileSync(tempPath, JSON.stringify(this.data, null, 2), 'utf-8');
       fs.renameSync(tempPath, this.filePath);
     } catch (err) {
@@ -144,6 +172,25 @@ class Database {
     return null;
   }
 
+  // Review History
+  insertReview(review) {
+    if (!this.data.reviewHistory) {
+      this.data.reviewHistory = [];
+    }
+    this.data.reviewHistory.unshift(review);
+    this.save();
+    return review;
+  }
+
+  getReviewsForDocument(documentId) {
+    if (!this.data.reviewHistory) return [];
+    return this.data.reviewHistory.filter(r => r.documentId === documentId);
+  }
+
+  getReviewHistory() {
+    return this.data.reviewHistory ? [...this.data.reviewHistory] : [];
+  }
+
   // Audit Logs
   insertAuditLog(log) {
     this.data.auditLogs.unshift(log);
@@ -161,7 +208,8 @@ class Database {
       users: [],
       documents: [],
       notifications: [],
-      auditLogs: []
+      auditLogs: [],
+      reviewHistory: []
     };
     this.seedUsers();
     this.save();
@@ -171,4 +219,3 @@ class Database {
 const dbInstance = new Database();
 module.exports = dbInstance;
 module.exports.Database = Database;
-

@@ -38,15 +38,19 @@ function mockRequest(app, options = {}) {
       if (options.body) {
         if (Buffer.isBuffer(options.body)) {
           requestBodyBuffer = options.body;
+          req.headers['content-length'] = requestBodyBuffer.length.toString();
         } else if (typeof options.body === 'object') {
+          // Plain object: pre-assign req.body directly for express handlers
+          req.body = options.body;
           requestBodyBuffer = Buffer.from(JSON.stringify(options.body));
           if (!req.headers['content-type']) {
             req.headers['content-type'] = 'application/json';
           }
+          req.headers['content-length'] = requestBodyBuffer.length.toString();
         } else {
           requestBodyBuffer = Buffer.from(String(options.body));
+          req.headers['content-length'] = requestBodyBuffer.length.toString();
         }
-        req.headers['content-length'] = requestBodyBuffer.length.toString();
       }
 
       const res = new http.ServerResponse(req);
@@ -97,4 +101,3 @@ module.exports = {
   createMultipartPayload,
   mockRequest
 };
-
