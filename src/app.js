@@ -5,6 +5,7 @@ const documentRoutes = require('./routes/documentRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 
@@ -21,6 +22,7 @@ app.use(express.static(path.resolve(__dirname, '../public')));
 app.use('/api', authMiddleware);
 
 // API routes
+app.use('/api/student', studentRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/student/documents', documentRoutes);
 app.use('/api/faculty', facultyRoutes);

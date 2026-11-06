@@ -334,6 +334,8 @@
           <a href="#forgot" class="forgot-link">Forgot password?</a>
         </div>
 
+        <div id="signinAlert" class="alert alert-danger hidden" role="alert"></div>
+
         <button type="submit" class="af-btn af-btn-dark af-btn-block btn-signin-submit">
           Sign in &nbsp;&rarr;
         </button>
@@ -356,7 +358,10 @@
 
       <!-- Main Navigation Tabs -->
       <nav class="nav-tabs" role="tablist">
-        <button class="tab-button active" id="tabUploadBtn" data-tab="uploadTab" role="tab" aria-selected="true">
+        <button class="tab-button active" id="tabDashboardBtn" data-tab="dashboardTab" role="tab" aria-selected="true">
+          📊 Dashboard
+        </button>
+        <button class="tab-button" id="tabUploadBtn" data-tab="uploadTab" role="tab" aria-selected="false">
           📤 Upload Document
         </button>
         <button class="tab-button" id="tabDocumentsBtn" data-tab="documentsTab" role="tab" aria-selected="false">
@@ -368,6 +373,9 @@
         <button class="tab-button" id="tabFacultyBtn" data-tab="facultyTab" role="tab" aria-selected="false">
           👨‍🏫 Faculty Advisor Inbox <span class="badge badge-primary" id="facultyNotifCount">0</span>
         </button>
+        <button class="tab-button" id="tabAdminUsersBtn" data-tab="adminUsersTab" role="tab" aria-selected="false">
+          👥 User Management
+        </button>
         <button class="tab-button" id="tabAuditBtn" data-tab="auditTab" role="tab" aria-selected="false">
           📜 Audit Logs
         </button>
@@ -376,8 +384,101 @@
       <!-- Global Alerts -->
       <div id="alertContainer" class="alert-container"></div>
 
+      <!-- ================= TAB 0: STUDENT DASHBOARD (US06) ================= -->
+      <section id="dashboardTab" class="tab-panel active" role="tabpanel" aria-labelledby="tabDashboardBtn">
+        <!-- Personalized Welcome Banner -->
+        <div class="dashboard-hero card">
+          <div class="dash-welcome-row">
+            <div>
+              <h1 class="dash-greeting" id="dashGreeting">Hi, <span id="dashStudentName">Alex Rivera</span></h1>
+              <p class="dash-sub">Here is what's happening with your academic documents today.</p>
+            </div>
+            <div class="dash-hero-actions">
+              <button type="button" class="af-btn af-btn-outline btn-sm" id="btnRefreshDashboard" aria-label="Refresh Dashboard">
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Loading Indicator (TC_24) -->
+        <div id="dashboardLoading" class="loading-state hidden" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <p>Loading your academic documents overview...</p>
+        </div>
+
+        <!-- Dashboard Error Alert with Retry Option (TC_25, TC_26) -->
+        <div id="dashboardError" class="alert alert-danger hidden" role="alert">
+          <span id="dashboardErrorMessage">Failed to load dashboard data.</span>
+          <button type="button" class="af-btn af-btn-outline btn-sm ml-2" id="btnRetryDashboard">Retry</button>
+        </div>
+
+        <!-- 4 Metric Cards (TC_03, TC_04, TC_05, TC_06, TC_27, TC_29) -->
+        <div class="dash-metrics-grid" id="dashMetricsGrid">
+          <div class="metric-card" id="cardTotalDocs">
+            <div class="metric-label">Total Documents</div>
+            <div class="metric-value" id="dashTotalDocs">0</div>
+            <div class="metric-desc">All submitted academic records</div>
+          </div>
+          <div class="metric-card metric-pending" id="cardPendingDocs">
+            <div class="metric-label">Pending Approval</div>
+            <div class="metric-value" id="dashPendingDocs">0</div>
+            <div class="metric-desc">Awaiting faculty advisor review</div>
+          </div>
+          <div class="metric-card metric-approved" id="cardApprovedDocs">
+            <div class="metric-label">Approved</div>
+            <div class="metric-value" id="dashApprovedDocs">0</div>
+            <div class="metric-desc">Verified and authentic records</div>
+          </div>
+          <div class="metric-card metric-rejected" id="cardRejectedDocs">
+            <div class="metric-label">Action Required / Rejected</div>
+            <div class="metric-value" id="dashRejectedDocs">0</div>
+            <div class="metric-desc">Eligible for document replacement</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Bar (TC_16, TC_17, TC_18, TC_19) -->
+        <div class="dash-quick-actions-bar card">
+          <div class="quick-actions-title">Quick Actions</div>
+          <div class="quick-actions-buttons">
+            <button type="button" class="af-btn af-btn-dark" id="btnQuickUpload" aria-label="Upload Document">
+              📤 Upload Document
+            </button>
+            <button type="button" class="af-btn af-btn-outline" id="btnQuickMyDocs" aria-label="My Documents">
+              📂 My Documents
+            </button>
+            <button type="button" class="af-btn af-btn-outline" id="btnQuickNotifs" aria-label="Notifications">
+              🔔 Notifications <span class="badge badge-primary ml-1" id="dashNotifBadge">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Uploads Section (TC_09, TC_10, TC_11, TC_12, TC_30, TC_31) -->
+        <div class="card dash-recent-card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>Recent Uploads</h2>
+              <p class="section-desc">Your latest document submissions and verification status.</p>
+            </div>
+            <button type="button" class="af-btn af-btn-link" id="btnViewAllDocs">View all in My Documents &rarr;</button>
+          </div>
+
+          <div id="dashRecentUploadsList" class="recent-uploads-container">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Empty State (TC_08) -->
+          <div id="dashEmptyState" class="empty-state hidden">
+            <div class="empty-state-icon">📄</div>
+            <h3>No documents uploaded yet</h3>
+            <p>Upload your first achievement certificate or internship record to get started with Faculty Advisor verification.</p>
+            <button type="button" class="af-btn af-btn-dark mt-3" id="btnEmptyUpload">📤 Upload Document</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= TAB 1: UPLOAD DOCUMENT ================= -->
-      <section id="uploadTab" class="tab-panel active" role="tabpanel">
+      <section id="uploadTab" class="tab-panel" role="tabpanel">
         <div class="card upload-card">
           <div class="card-header">
             <h2>Upload Achievement or Internship Document</h2>
@@ -679,7 +780,92 @@
         </div>
       </section>
 
-      <!-- ================= TAB 4: AUDIT LOGS ================= -->
+      <!-- ================= TAB 4: ADMIN USER & FACULTY MANAGEMENT (US07) ================= -->
+      <section id="adminUsersTab" class="tab-panel" role="tabpanel" aria-labelledby="tabAdminUsersBtn">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>User & Faculty Management</h2>
+              <p class="section-desc">Manage student and Faculty Advisor accounts, configure role permissions, and control student-advisor assignments.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" id="btnAddUserModalBtn" aria-label="Add New User">➕ Add New User</button>
+              <button class="btn btn-secondary btn-sm" id="btnRefreshAdminUsers" aria-label="Refresh Users">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar (TC_08 - TC_13) -->
+          <div class="admin-filters-bar" style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:1; min-width:220px;">
+              <input type="text" id="adminUserSearch" class="form-control" placeholder="🔍 Search by name, email, or ID...">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="adminRoleFilter" class="form-control" style="width:auto;">
+                <option value="All">All Roles</option>
+                <option value="Student">Student</option>
+                <option value="Faculty">Faculty</option>
+                <option value="Admin">Admin</option>
+              </select>
+              <select id="adminStatusFilter" class="form-control" style="width:auto;">
+                <option value="All">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Disabled">Disabled</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="btnClearAdminFilters">Clear Filters</button>
+            </div>
+          </div>
+
+          <!-- Loading State (TC_35) -->
+          <div id="adminUsersLoading" class="loading-state hidden" role="status" aria-live="polite">
+            <div class="spinner"></div>
+            <p>Loading user accounts...</p>
+          </div>
+
+          <!-- Error Alert with Retry (TC_35, TC_36) -->
+          <div id="adminUsersError" class="alert alert-danger hidden" role="alert">
+            <span id="adminUsersErrorMessage">Failed to load user accounts.</span>
+            <button type="button" class="af-btn af-btn-outline btn-sm ml-2" id="btnRetryAdminUsers">Retry</button>
+          </div>
+
+          <!-- Users Table (TC_03 - TC_07) -->
+          <div class="table-responsive">
+            <table class="documents-table" id="adminUsersTable" aria-label="Registered Users List">
+              <thead>
+                <tr>
+                  <th scope="col" class="sortable" id="thSortName" style="cursor:pointer;" title="Sort by Name">
+                    User Name <span id="sortNameIndicator">↕️</span>
+                  </th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Department / Sem</th>
+                  <th scope="col">Assigned Advisor / Details</th>
+                  <th scope="col" class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTableBody">
+                <tr class="empty-row"><td colspan="7">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State (TC_10) -->
+          <div id="adminUsersEmptyState" class="empty-state hidden" style="padding: 24px; text-align: center;">
+            <p style="color:#64748b; font-size:0.95rem;">No user accounts found matching the current search or filters.</p>
+          </div>
+
+          <!-- Pagination Bar (TC_15) -->
+          <div id="adminUsersPagination" class="pagination-bar flex-between" style="margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0;">
+            <span id="adminUsersPageInfo" style="font-size:0.88rem; color:#64748b;">Showing 1-10 of 10 users</span>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAdminPrevPage" disabled>&larr; Previous</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAdminNextPage" disabled>Next &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: AUDIT LOGS ================= -->
       <section id="auditTab" class="tab-panel" role="tabpanel">
         <div class="card">
           <div class="card-header flex-between">
@@ -708,6 +894,173 @@
           </div>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- Modal: Create New User (US07 / TC_18 - TC_22) -->
+  <div class="modal hidden" id="createUserModal" role="dialog" aria-modal="true" aria-labelledby="createUserModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="createUserModalTitle">Create New User Account</h3>
+        <button type="button" class="modal-close" id="btnCloseCreateUser">&times;</button>
+      </div>
+      <form id="createUserForm" novalidate>
+        <div class="modal-body">
+          <div id="createUserAlert" class="alert alert-danger hidden" role="alert"></div>
+
+          <div class="form-group">
+            <label for="newUserName" class="form-label required">Full Name</label>
+            <input type="text" id="newUserName" class="form-control" placeholder="e.g. Kavi Raman" required>
+          </div>
+
+          <div class="form-group">
+            <label for="newUserEmail" class="form-label required">Email Address</label>
+            <input type="email" id="newUserEmail" class="form-control" placeholder="e.g. kavi@example.edu" required>
+          </div>
+
+          <div class="form-group">
+            <label for="newUserRole" class="form-label required">Role</label>
+            <select id="newUserRole" class="form-control" required>
+              <option value="Student">Student</option>
+              <option value="Faculty">Faculty Advisor</option>
+              <option value="Admin">Administrator</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="newUserDept" class="form-label">Department</label>
+            <input type="text" id="newUserDept" class="form-control" placeholder="e.g. Computer Science & Engineering">
+          </div>
+
+          <div class="form-group" id="groupUserSemester">
+            <label for="newUserSemester" class="form-label">Semester</label>
+            <input type="text" id="newUserSemester" class="form-control" placeholder="e.g. 4th Semester">
+          </div>
+
+          <div class="form-group" id="groupUserAdvisor">
+            <label for="newUserAdvisor" class="form-label">Assigned Faculty Advisor</label>
+            <select id="newUserAdvisor" class="form-control">
+              <option value="">-- None / Select Advisor --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelCreateUser">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitCreateUser">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit User Details (US07 / TC_23 - TC_25) -->
+  <div class="modal hidden" id="editUserModal" role="dialog" aria-modal="true" aria-labelledby="editUserModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="editUserModalTitle">Edit User Profile</h3>
+        <button type="button" class="modal-close" id="btnCloseEditUser">&times;</button>
+      </div>
+      <form id="editUserForm" novalidate>
+        <div class="modal-body">
+          <div id="editUserAlert" class="alert alert-danger hidden" role="alert"></div>
+          <input type="hidden" id="editUserId">
+
+          <div class="form-group">
+            <label for="editUserName" class="form-label required">Full Name</label>
+            <input type="text" id="editUserName" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="editUserEmail" class="form-label required">Email Address</label>
+            <input type="email" id="editUserEmail" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="editUserRole" class="form-label required">Role</label>
+            <select id="editUserRole" class="form-control" required>
+              <option value="Student">Student</option>
+              <option value="Faculty">Faculty Advisor</option>
+              <option value="Admin">Administrator</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editUserStatus" class="form-label required">Account Status</label>
+            <select id="editUserStatus" class="form-control" required>
+              <option value="Active">Active</option>
+              <option value="Disabled">Disabled</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="editUserDept" class="form-label">Department</label>
+            <input type="text" id="editUserDept" class="form-control">
+          </div>
+
+          <div class="form-group" id="groupEditSemester">
+            <label for="editUserSemester" class="form-label">Semester</label>
+            <input type="text" id="editUserSemester" class="form-control">
+          </div>
+
+          <div class="form-group" id="groupEditAdvisor">
+            <label for="editUserAdvisor" class="form-label">Assigned Faculty Advisor</label>
+            <select id="editUserAdvisor" class="form-control">
+              <option value="">-- None / Select Advisor --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelEditUser">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitEditUser">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Assign / Reassign Faculty Advisor (US07 AC 3 & 4) -->
+  <div class="modal hidden" id="assignAdvisorModal" role="dialog" aria-modal="true" aria-labelledby="assignAdvisorModalTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="assignAdvisorModalTitle">Assign Faculty Advisor</h3>
+        <button type="button" class="modal-close" id="btnCloseAssignAdvisor">&times;</button>
+      </div>
+      <form id="assignAdvisorForm" novalidate>
+        <div class="modal-body">
+          <div id="assignAdvisorAlert" class="alert alert-danger hidden" role="alert"></div>
+          <input type="hidden" id="assignAdvisorStudentId">
+
+          <p style="font-size:0.95rem; margin-bottom:14px;">
+            Assign or change the Faculty Advisor for student: <strong id="assignAdvisorStudentName">Student Name</strong>
+          </p>
+
+          <div class="form-group">
+            <label for="assignAdvisorSelect" class="form-label required">Select Faculty Advisor</label>
+            <select id="assignAdvisorSelect" class="form-control" required>
+              <option value="">-- Select Faculty Advisor --</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelAssignAdvisor">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitAssignAdvisor">Confirm Assignment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmation for Destructive / Status Action (TC_27, TC_39) -->
+  <div class="modal hidden" id="confirmAdminActionModal" role="dialog" aria-modal="true" aria-labelledby="confirmAdminActionTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="confirmAdminActionTitle">Confirm Action</h3>
+        <button type="button" class="modal-close" id="btnCloseConfirmAdmin">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmAdminActionMsg" style="font-size:0.95rem;">Are you sure you want to perform this action?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnCancelAdminAction">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btnExecuteAdminAction">Confirm</button>
+      </div>
     </div>
   </div>
 

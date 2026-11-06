@@ -4,6 +4,7 @@ const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
 
 // State
 let currentUser = null;
+let authToken = sessionStorage.getItem('af_token') || null;
 let selectedFile = null;
 let isSubmitting = false;
 let currentView = 'landing'; // 'landing' | 'portal'
@@ -168,34 +169,110 @@ function setupEventListeners() {
     });
   });
 
-  // Signin Form Submit
+  // Signin Form Submit (US06: Validate registered credentials, error message on failure)
   signinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const userId = signinEmail.value.trim();
-    if (!userId) return;
-    await switchUser(userId);
-    closeSigninModal();
-    showPortalDashboard();
+    const signinAlert = document.getElementById('signinAlert');
+    if (signinAlert) signinAlert.classList.add('hidden');
 
-    // Direct user to relevant tab
-    if (selectedSigninRole === 'Faculty') {
-      switchTab('facultyTab');
-    } else if (selectedSigninRole === 'Admin') {
-      switchTab('auditTab');
-    } else {
-      switchTab('uploadTab');
+    const identifier = signinEmail.value.trim();
+    const password = signinPassword.value.trim();
+
+    if (!identifier || !password) {
+      if (signinAlert) {
+        signinAlert.textContent = 'Please enter both username/email and password';
+        signinAlert.classList.remove('hidden');
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password, role: selectedSigninRole })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (signinAlert) {
+          signinAlert.textContent = data.message || 'Invalid username/email or password';
+          signinAlert.classList.remove('hidden');
+        }
+        return;
+      }
+
+      authToken = data.token;
+      sessionStorage.setItem('af_token', authToken);
+      currentUser = data.user;
+      closeSigninModal();
+      showPortalDashboard();
+      renderCurrentUser();
+
+      // Direct student to Dashboard (TC_01)
+      if (currentUser.role === 'Faculty') {
+        switchTab('facultyTab');
+      } else if (currentUser.role === 'Admin') {
+        switchTab('auditTab');
+      } else {
+        switchTab('dashboardTab');
+      }
+
+      showAlert(`Welcome back, ${currentUser.name}!`, 'success');
+      await refreshAllData();
+    } catch (err) {
+      if (signinAlert) {
+        signinAlert.textContent = 'Network error during sign in. Please try again.';
+        signinAlert.classList.remove('hidden');
+      }
     }
   });
 
-  // Sign Out
-  btnSignOut.addEventListener('click', () => {
+  // Sign Out (US06: Terminate active session)
+  btnSignOut.addEventListener('click', async () => {
+    try {
+      if (authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+      }
+    } catch (err) {
+      console.warn('Logout warning:', err.message);
+    }
+    authToken = null;
+    currentUser = null;
+    sessionStorage.removeItem('af_token');
     showLandingPage();
+    showAlert('You have been logged out securely.', 'info');
   });
 
   // Role dropdown switcher in top header
   roleSelect.addEventListener('change', async (e) => {
     await switchUser(e.target.value);
   });
+
+  // Quick Action buttons on Student Dashboard (TC_16, TC_17, TC_18)
+  const btnQuickUpload = document.getElementById('btnQuickUpload');
+  if (btnQuickUpload) btnQuickUpload.addEventListener('click', () => switchTab('uploadTab'));
+
+  const btnQuickMyDocs = document.getElementById('btnQuickMyDocs');
+  if (btnQuickMyDocs) btnQuickMyDocs.addEventListener('click', () => switchTab('documentsTab'));
+
+  const btnQuickNotifs = document.getElementById('btnQuickNotifs');
+  if (btnQuickNotifs) btnQuickNotifs.addEventListener('click', () => switchTab('notificationsTab'));
+
+  const btnViewAllDocs = document.getElementById('btnViewAllDocs');
+  if (btnViewAllDocs) btnViewAllDocs.addEventListener('click', () => switchTab('documentsTab'));
+
+  const btnEmptyUpload = document.getElementById('btnEmptyUpload');
+  if (btnEmptyUpload) btnEmptyUpload.addEventListener('click', () => switchTab('uploadTab'));
+
+  const btnRefreshDashboard = document.getElementById('btnRefreshDashboard');
+  if (btnRefreshDashboard) btnRefreshDashboard.addEventListener('click', loadStudentDashboard);
+
+  const btnRetryDashboard = document.getElementById('btnRetryDashboard');
+  if (btnRetryDashboard) btnRetryDashboard.addEventListener('click', loadStudentDashboard);
 
   // Tab navigation
   tabButtons.forEach(btn => {
@@ -303,6 +380,9 @@ function setupEventListeners() {
 
   // Setup US02 Faculty Review handlers
   setupFacultyReviewListeners();
+
+  // Setup US07 Admin User Management handlers
+  setupAdminUserListeners();
 }
 
 // -------------------------------------------------------------
@@ -1206,14 +1286,23 @@ async function loadAuditLogs() {
 // -------------------------------------------------------------
 async function loadCurrentUser() {
   try {
-    const res = await fetch('/api/auth/me');
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch('/api/auth/me', { headers });
     const data = await res.json();
-    if (data.user) {
+    if (res.ok && data.user) {
       currentUser = data.user;
       renderCurrentUser();
+      return true;
+    } else {
+      currentUser = null;
+      authToken = null;
+      sessionStorage.removeItem('af_token');
+      return false;
     }
   } catch (err) {
     console.error('Failed loading user:', err);
+    return false;
   }
 }
 
@@ -1227,8 +1316,12 @@ async function switchUser(userId) {
     const data = await res.json();
     if (data.user) {
       currentUser = data.user;
+      if (data.token) {
+        authToken = data.token;
+        sessionStorage.setItem('af_token', authToken);
+      }
       renderCurrentUser();
-      showAlert(`Switched to: ${currentUser.name} (${currentUser.role})`, 'success');
+      showAlert(`Switched session to: ${currentUser.name} (${currentUser.role})`, 'success');
       await refreshAllData();
     }
   } catch (err) {
@@ -1244,11 +1337,39 @@ function renderCurrentUser() {
   userAvatarEl.textContent = initials;
   roleSelect.value = currentUser.id;
 
+  const tabDashboardBtn = document.getElementById('tabDashboardBtn');
+  const tabFacultyBtn = document.getElementById('tabFacultyBtn');
+  const tabAuditBtn = document.getElementById('tabAuditBtn');
+  const tabAdminUsersBtn = document.getElementById('tabAdminUsersBtn');
+  const tabUploadBtn = document.getElementById('tabUploadBtn');
+  const tabDocumentsBtn = document.getElementById('tabDocumentsBtn');
+  const tabNotificationsBtn = document.getElementById('tabNotificationsBtn');
+
+  // Role-Based Control & Tab Isolation (TC_02, TC_38, TC_40)
   if (currentUser.role === 'Student') {
     advisorBanner.classList.remove('hidden');
     assignedAdvisorName.textContent = currentUser.assignedFacultyAdvisorName || 'Dr. Robert Smith';
-  } else {
+    if (tabDashboardBtn) tabDashboardBtn.classList.remove('hidden');
+    if (tabUploadBtn) tabUploadBtn.classList.remove('hidden');
+    if (tabDocumentsBtn) tabDocumentsBtn.classList.remove('hidden');
+    if (tabNotificationsBtn) tabNotificationsBtn.classList.remove('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.add('hidden');
+    if (tabAdminUsersBtn) tabAdminUsersBtn.classList.add('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
+  } else if (currentUser.role === 'Faculty') {
     advisorBanner.classList.add('hidden');
+    if (tabDashboardBtn) tabDashboardBtn.classList.add('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
+    if (tabAdminUsersBtn) tabAdminUsersBtn.classList.add('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
+  } else {
+    // Administrator
+    advisorBanner.classList.add('hidden');
+    if (tabDashboardBtn) tabDashboardBtn.classList.add('hidden');
+    if (tabUploadBtn) tabUploadBtn.classList.add('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
+    if (tabAdminUsersBtn) tabAdminUsersBtn.classList.remove('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.remove('hidden');
   }
 }
 
@@ -1265,14 +1386,165 @@ function switchTab(tabId) {
     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
+  if (tabId === 'dashboardTab') loadStudentDashboard();
   if (tabId === 'documentsTab') loadDocuments();
   if (tabId === 'notificationsTab') loadStudentNotifications();
   if (tabId === 'facultyTab') loadFacultyData();
+  if (tabId === 'adminUsersTab') loadAdminUsers();
   if (tabId === 'auditTab') loadAuditLogs();
 }
 
 async function refreshAllData() {
-  await Promise.all([loadDocuments(), loadStudentNotifications(), loadFacultyData(), loadAuditLogs()]);
+  await Promise.all([
+    loadStudentDashboard(),
+    loadDocuments(),
+    loadStudentNotifications(),
+    loadFacultyData(),
+    loadAdminUsers(),
+    loadAuditLogs()
+  ]);
+}
+
+// -------------------------------------------------------------
+// Student Dashboard Operations (US06 & TC_01 - TC_40)
+// -------------------------------------------------------------
+async function loadStudentDashboard() {
+  const loadingEl = document.getElementById('dashboardLoading');
+  const errorEl = document.getElementById('dashboardError');
+  const errorMsgEl = document.getElementById('dashboardErrorMessage');
+  const emptyStateEl = document.getElementById('dashEmptyState');
+  const recentListEl = document.getElementById('dashRecentUploadsList');
+  const greetingEl = document.getElementById('dashStudentName');
+
+  const totalEl = document.getElementById('dashTotalDocs');
+  const pendingEl = document.getElementById('dashPendingDocs');
+  const approvedEl = document.getElementById('dashApprovedDocs');
+  const rejectedEl = document.getElementById('dashRejectedDocs');
+  const notifBadgeEl = document.getElementById('dashNotifBadge');
+
+  if (!recentListEl) return;
+
+  // Show loading state (TC_24)
+  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  try {
+    const headers = { 'Accept': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+    const res = await fetch('/api/student/dashboard', { headers });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 401 && (data.code === 'SESSION_EXPIRED' || data.message.includes('expired'))) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        showLandingPage();
+        showAlert('Session expired due to inactivity. Please log in again.', 'danger');
+        openSigninModal('Student');
+        return;
+      }
+      throw new Error(data.message || 'Failed to load dashboard data');
+    }
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+
+    // Personalized welcome greeting (TC_02)
+    if (greetingEl) {
+      greetingEl.textContent = (data.student && data.student.name) || (currentUser && currentUser.name) || 'Student';
+    }
+
+    // Dashboard Statistics (TC_03, TC_04, TC_05, TC_06, TC_07, TC_27, TC_29)
+    if (totalEl) totalEl.textContent = data.counts.total;
+    if (pendingEl) pendingEl.textContent = data.counts.pending;
+    if (approvedEl) approvedEl.textContent = data.counts.approved;
+    if (rejectedEl) rejectedEl.textContent = data.counts.rejected;
+    if (notifBadgeEl) notifBadgeEl.textContent = data.unreadNotificationCount;
+
+    // Recent Uploads Rendering (TC_08, TC_09, TC_10, TC_11, TC_12, TC_30, TC_31)
+    const uploads = data.recentUploads || [];
+    if (uploads.length === 0) {
+      // Empty state for student with no uploads (TC_08)
+      if (emptyStateEl) emptyStateEl.classList.remove('hidden');
+      recentListEl.innerHTML = '';
+    } else {
+      if (emptyStateEl) emptyStateEl.classList.add('hidden');
+      recentListEl.innerHTML = `
+        <table class="recent-table" aria-label="Recent Uploads">
+          <thead>
+            <tr>
+              <th scope="col">Document Title</th>
+              <th scope="col">Category</th>
+              <th scope="col">Upload Date</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${uploads.map(doc => {
+              let badgeClass = 'badge-pending';
+              let icon = '⏳';
+              if (doc.status === 'Approved') {
+                badgeClass = 'badge-approved';
+                icon = '✅';
+              } else if (doc.status === 'Rejected') {
+                badgeClass = 'badge-rejected';
+                icon = '❌';
+              }
+              const safeTitle = escapeHtml(doc.title);
+              const safeOrg = escapeHtml(doc.issuingOrganization || '');
+              const safeCategory = escapeHtml(doc.category || '');
+              const displayDate = doc.formattedDate || (doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A');
+
+              return `
+                <tr class="recent-row" tabindex="0" role="button" aria-label="View details for ${safeTitle}" data-doc-id="${doc.id}">
+                  <td class="recent-title-cell">
+                    <span class="recent-title-text" title="${safeTitle}">${safeTitle}</span>
+                    <span class="recent-org-sub">${safeOrg}</span>
+                  </td>
+                  <td><span class="badge badge-light">${safeCategory}</span></td>
+                  <td>${displayDate}</td>
+                  <td>
+                    <span class="badge-status ${badgeClass}" aria-label="Status: ${doc.status}">
+                      <span>${icon}</span>
+                      <span>${doc.status}</span>
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <button type="button" class="af-btn af-btn-outline btn-sm btn-recent-preview" data-id="${doc.id}" aria-label="Preview document ${safeTitle}">
+                      👁️ View
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Attach row and preview click handlers (TC_30, TC_34)
+      recentListEl.querySelectorAll('.recent-row, .btn-recent-preview').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const docId = el.dataset.docId || el.dataset.id;
+          if (docId) openDocumentPreview(docId);
+        });
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const docId = el.dataset.docId || el.dataset.id;
+            if (docId) openDocumentPreview(docId);
+          }
+        });
+      });
+    }
+  } catch (err) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsgEl) errorMsgEl.textContent = err.message || 'Failed to load dashboard data';
+    }
+  }
 }
 
 // -------------------------------------------------------------
@@ -1403,3 +1675,506 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// =============================================================
+// ADMIN USER & FACULTY MANAGEMENT (US07 & TC_01 - TC_40)
+// =============================================================
+let adminUsersCurrentPage = 1;
+let adminUsersSortOrder = 'asc';
+let pendingAdminAction = null;
+
+function setupAdminUserListeners() {
+  const btnAddUserModal = document.getElementById('btnAddUserModalBtn');
+  const btnCloseCreateUser = document.getElementById('btnCloseCreateUser');
+  const btnCancelCreateUser = document.getElementById('btnCancelCreateUser');
+  const createUserForm = document.getElementById('createUserForm');
+
+  const btnCloseEditUser = document.getElementById('btnCloseEditUser');
+  const btnCancelEditUser = document.getElementById('btnCancelEditUser');
+  const editUserForm = document.getElementById('editUserForm');
+
+  const btnCloseAssignAdvisor = document.getElementById('btnCloseAssignAdvisor');
+  const btnCancelAssignAdvisor = document.getElementById('btnCancelAssignAdvisor');
+  const assignAdvisorForm = document.getElementById('assignAdvisorForm');
+
+  const btnCloseConfirmAdmin = document.getElementById('btnCloseConfirmAdmin');
+  const btnCancelAdminAction = document.getElementById('btnCancelAdminAction');
+  const btnExecuteAdminAction = document.getElementById('btnExecuteAdminAction');
+
+  const adminSearch = document.getElementById('adminUserSearch');
+  const roleFilter = document.getElementById('adminRoleFilter');
+  const statusFilter = document.getElementById('adminStatusFilter');
+  const btnClearFilters = document.getElementById('btnClearAdminFilters');
+  const btnRefresh = document.getElementById('btnRefreshAdminUsers');
+  const btnRetry = document.getElementById('btnRetryAdminUsers');
+
+  const prevBtn = document.getElementById('btnAdminPrevPage');
+  const nextBtn = document.getElementById('btnAdminNextPage');
+  const thSortName = document.getElementById('thSortName');
+
+  // Open Create User Modal
+  if (btnAddUserModal) {
+    btnAddUserModal.addEventListener('click', async () => {
+      const modal = document.getElementById('createUserModal');
+      const form = document.getElementById('createUserForm');
+      const alertEl = document.getElementById('createUserAlert');
+      if (alertEl) alertEl.classList.add('hidden');
+      if (form) form.reset();
+      await populateFacultyAdvisorDropdown('newUserAdvisor');
+      if (modal) modal.classList.remove('hidden');
+    });
+  }
+
+  // Close Create User Modal
+  if (btnCloseCreateUser) btnCloseCreateUser.addEventListener('click', () => {
+    document.getElementById('createUserModal')?.classList.add('hidden');
+  });
+  if (btnCancelCreateUser) btnCancelCreateUser.addEventListener('click', () => {
+    document.getElementById('createUserModal')?.classList.add('hidden');
+  });
+
+  // Submit Create User Form (TC_18 - TC_22)
+  if (createUserForm) {
+    createUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById('createUserAlert');
+      if (alertEl) alertEl.classList.add('hidden');
+
+      const name = document.getElementById('newUserName')?.value.trim();
+      const email = document.getElementById('newUserEmail')?.value.trim();
+      const role = document.getElementById('newUserRole')?.value;
+      const department = document.getElementById('newUserDept')?.value.trim();
+      const semester = document.getElementById('newUserSemester')?.value.trim();
+      const advisorId = document.getElementById('newUserAdvisor')?.value || null;
+
+      if (!name || !email) {
+        if (alertEl) {
+          alertEl.textContent = 'Name and email are required fields';
+          alertEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ name, email, role, department, semester, assignedFacultyAdvisorId: advisorId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (alertEl) {
+            alertEl.textContent = data.message || 'Error creating user account';
+            alertEl.classList.remove('hidden');
+          }
+          return;
+        }
+
+        document.getElementById('createUserModal')?.classList.add('hidden');
+        showAlert(`Account for '${data.user.name}' created successfully!`, 'success');
+        await loadAdminUsers(1);
+      } catch (err) {
+        if (alertEl) {
+          alertEl.textContent = err.message || 'Network error while creating account';
+          alertEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+
+  // Close Edit User Modal & Discard Changes (TC_25)
+  if (btnCloseEditUser) btnCloseEditUser.addEventListener('click', () => {
+    document.getElementById('editUserModal')?.classList.add('hidden');
+  });
+  if (btnCancelEditUser) btnCancelEditUser.addEventListener('click', () => {
+    document.getElementById('editUserModal')?.classList.add('hidden');
+  });
+
+  // Submit Edit User Form (TC_23 - TC_25, TC_31)
+  if (editUserForm) {
+    editUserForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById('editUserAlert');
+      if (alertEl) alertEl.classList.add('hidden');
+
+      const id = document.getElementById('editUserId')?.value;
+      const name = document.getElementById('editUserName')?.value.trim();
+      const email = document.getElementById('editUserEmail')?.value.trim();
+      const role = document.getElementById('editUserRole')?.value;
+      const status = document.getElementById('editUserStatus')?.value;
+      const department = document.getElementById('editUserDept')?.value.trim();
+      const semester = document.getElementById('editUserSemester')?.value.trim();
+      const advisorId = document.getElementById('editUserAdvisor')?.value || null;
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+        const res = await fetch(`/api/admin/users/${id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ name, email, role, status, department, semester, assignedFacultyAdvisorId: advisorId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (alertEl) {
+            alertEl.textContent = data.message || 'Error saving user updates';
+            alertEl.classList.remove('hidden');
+          }
+          return;
+        }
+
+        document.getElementById('editUserModal')?.classList.add('hidden');
+        showAlert(`User '${data.user.name}' updated successfully!`, 'success');
+        await loadAdminUsers(adminUsersCurrentPage);
+      } catch (err) {
+        if (alertEl) {
+          alertEl.textContent = err.message || 'Network error while updating user';
+          alertEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+
+  // Close Assign Advisor Modal
+  if (btnCloseAssignAdvisor) btnCloseAssignAdvisor.addEventListener('click', () => {
+    document.getElementById('assignAdvisorModal')?.classList.add('hidden');
+  });
+  if (btnCancelAssignAdvisor) btnCancelAssignAdvisor.addEventListener('click', () => {
+    document.getElementById('assignAdvisorModal')?.classList.add('hidden');
+  });
+
+  // Submit Assign Advisor Form (US07 AC 3 & 4)
+  if (assignAdvisorForm) {
+    assignAdvisorForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById('assignAdvisorAlert');
+      if (alertEl) alertEl.classList.add('hidden');
+
+      const studentId = document.getElementById('assignAdvisorStudentId')?.value;
+      const facultyId = document.getElementById('assignAdvisorSelect')?.value;
+
+      if (!facultyId) {
+        if (alertEl) {
+          alertEl.textContent = 'Please select a Faculty Advisor';
+          alertEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+        const res = await fetch(`/api/admin/students/${studentId}/advisor`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ facultyId })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (alertEl) {
+            alertEl.textContent = data.message || 'Error assigning advisor';
+            alertEl.classList.remove('hidden');
+          }
+          return;
+        }
+
+        document.getElementById('assignAdvisorModal')?.classList.add('hidden');
+        showAlert(data.message, 'success');
+        await loadAdminUsers(adminUsersCurrentPage);
+      } catch (err) {
+        if (alertEl) {
+          alertEl.textContent = err.message || 'Network error while assigning advisor';
+          alertEl.classList.remove('hidden');
+        }
+      }
+    });
+  }
+
+  // Confirm Admin Action Dialog controls (TC_27, TC_39)
+  if (btnCloseConfirmAdmin) btnCloseConfirmAdmin.addEventListener('click', () => {
+    document.getElementById('confirmAdminActionModal')?.classList.add('hidden');
+    pendingAdminAction = null;
+  });
+  if (btnCancelAdminAction) btnCancelAdminAction.addEventListener('click', () => {
+    document.getElementById('confirmAdminActionModal')?.classList.add('hidden');
+    pendingAdminAction = null;
+  });
+  if (btnExecuteAdminAction) {
+    btnExecuteAdminAction.addEventListener('click', async () => {
+      if (!pendingAdminAction) return;
+      const { type, userId, targetStatus, userName } = pendingAdminAction;
+      document.getElementById('confirmAdminActionModal')?.classList.add('hidden');
+      pendingAdminAction = null;
+
+      if (type === 'TOGGLE_STATUS') {
+        try {
+          const headers = { 'Content-Type': 'application/json' };
+          if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+          else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+          const res = await fetch(`/api/admin/users/${userId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({ status: targetStatus })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Failed to update account status');
+
+          showAlert(`Account for '${userName}' has been set to ${targetStatus}.`, 'success');
+          await loadAdminUsers(adminUsersCurrentPage);
+        } catch (err) {
+          showAlert(err.message, 'danger');
+        }
+      }
+    });
+  }
+
+  // Filters & Search handlers (TC_08 - TC_13)
+  if (adminSearch) adminSearch.addEventListener('input', () => loadAdminUsers(1));
+  if (roleFilter) roleFilter.addEventListener('change', () => loadAdminUsers(1));
+  if (statusFilter) statusFilter.addEventListener('change', () => loadAdminUsers(1));
+
+  if (btnClearFilters) {
+    btnClearFilters.addEventListener('click', () => {
+      if (adminSearch) adminSearch.value = '';
+      if (roleFilter) roleFilter.value = 'All';
+      if (statusFilter) statusFilter.value = 'All';
+      loadAdminUsers(1);
+    });
+  }
+
+  if (btnRefresh) btnRefresh.addEventListener('click', () => loadAdminUsers(adminUsersCurrentPage));
+  if (btnRetry) btnRetry.addEventListener('click', () => loadAdminUsers(adminUsersCurrentPage));
+
+  // Sort by Name (TC_14)
+  if (thSortName) {
+    thSortName.addEventListener('click', () => {
+      adminUsersSortOrder = adminUsersSortOrder === 'asc' ? 'desc' : 'asc';
+      const ind = document.getElementById('sortNameIndicator');
+      if (ind) ind.textContent = adminUsersSortOrder === 'asc' ? '▲' : '▼';
+      loadAdminUsers(1);
+    });
+  }
+
+  // Pagination (TC_15)
+  if (prevBtn) prevBtn.addEventListener('click', () => {
+    if (adminUsersCurrentPage > 1) loadAdminUsers(adminUsersCurrentPage - 1);
+  });
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    loadAdminUsers(adminUsersCurrentPage + 1);
+  });
+}
+
+// Populate Faculty Advisors dropdown in modals
+async function populateFacultyAdvisorDropdown(selectElementId, selectedId = null) {
+  const selectEl = document.getElementById(selectElementId);
+  if (!selectEl) return;
+
+  try {
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+    const res = await fetch('/api/admin/users?role=Faculty', { headers });
+    const data = await res.json();
+    const facultyList = data.users || [];
+
+    selectEl.innerHTML = '<option value="">-- None / Select Advisor --</option>' +
+      facultyList.map(f => `
+        <option value="${f.id}" ${selectedId === f.id ? 'selected' : ''}>
+          ${escapeHtml(f.name)} (${escapeHtml(f.department || 'Faculty')})
+        </option>
+      `).join('');
+  } catch (err) {
+    console.error('Failed to populate faculty advisors:', err);
+  }
+}
+
+// Load Admin Users List (TC_03 - TC_15)
+async function loadAdminUsers(page = 1) {
+  const tableBody = document.getElementById('adminUsersTableBody');
+  const loadingEl = document.getElementById('adminUsersLoading');
+  const errorEl = document.getElementById('adminUsersError');
+  const errorMsgEl = document.getElementById('adminUsersErrorMessage');
+  const emptyEl = document.getElementById('adminUsersEmptyState');
+  const pageInfoEl = document.getElementById('adminUsersPageInfo');
+  const prevBtn = document.getElementById('btnAdminPrevPage');
+  const nextBtn = document.getElementById('btnAdminNextPage');
+
+  if (!tableBody) return;
+  adminUsersCurrentPage = page;
+
+  const search = document.getElementById('adminUserSearch')?.value.trim() || '';
+  const role = document.getElementById('adminRoleFilter')?.value || 'All';
+  const status = document.getElementById('adminStatusFilter')?.value || 'All';
+
+  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+  if (emptyEl) emptyEl.classList.add('hidden');
+
+  try {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (role !== 'All') params.set('role', role);
+    if (status !== 'All') params.set('status', status);
+    params.set('sort', 'name');
+    params.set('sortOrder', adminUsersSortOrder);
+    params.set('page', page);
+    params.set('limit', 10);
+
+    const headers = { 'Accept': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+    const res = await fetch(`/api/admin/users?${params.toString()}`, { headers });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || 'Failed to load users');
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+
+    const users = data.users || [];
+    if (users.length === 0) {
+      tableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No matching accounts found.</td></tr>';
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (pageInfoEl) pageInfoEl.textContent = 'Showing 0-0 of 0 users';
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
+    if (pageInfoEl) {
+      const start = (data.page - 1) * data.limit + 1;
+      const end = Math.min(start + data.count - 1, data.total);
+      pageInfoEl.textContent = `Showing ${start}-${end} of ${data.total} users`;
+    }
+
+    if (prevBtn) prevBtn.disabled = data.page <= 1;
+    if (nextBtn) nextBtn.disabled = data.page >= data.totalPages;
+
+    tableBody.innerHTML = users.map(user => {
+      const safeName = escapeHtml(user.name);
+      const safeEmail = escapeHtml(user.email);
+      const safeRole = escapeHtml(user.role);
+      const safeStatus = escapeHtml(user.status || 'Active');
+      const safeDept = escapeHtml(user.department || 'N/A');
+      const safeSem = escapeHtml(user.semester || '');
+      const advisorText = user.role === 'Student' 
+        ? (user.assignedFacultyAdvisorName ? `👨‍🏫 ${escapeHtml(user.assignedFacultyAdvisorName)}` : '<span style="color:#f59e0b;">⚠️ Unassigned</span>')
+        : (user.role === 'Faculty' ? 'Faculty Advisor' : 'System Admin');
+
+      const statusBadge = safeStatus === 'Active'
+        ? '<span class="badge-status badge-approved"><span>✅</span><span>Active</span></span>'
+        : '<span class="badge-status badge-rejected"><span>⛔</span><span>Disabled</span></span>';
+
+      const toggleActionText = safeStatus === 'Active' ? 'Disable' : 'Enable';
+      const toggleActionClass = safeStatus === 'Active' ? 'btn-danger' : 'btn-success';
+
+      return `
+        <tr class="user-row" data-id="${user.id}">
+          <td>
+            <strong>${safeName}</strong>
+            <br><small style="color:#64748b;">ID: ${escapeHtml(user.id)}</small>
+          </td>
+          <td>${safeEmail}</td>
+          <td><span class="badge badge-light">${safeRole}</span></td>
+          <td>${statusBadge}</td>
+          <td>${safeDept} ${safeSem ? `<small>(${safeSem})</small>` : ''}</td>
+          <td>${advisorText}</td>
+          <td class="text-right" style="white-space:nowrap;">
+            <button type="button" class="btn btn-secondary btn-sm btn-edit-user" data-id="${user.id}" aria-label="Edit user ${safeName}">✏️ Edit</button>
+            ${user.role === 'Student' ? `<button type="button" class="btn btn-secondary btn-sm btn-assign-advisor" data-id="${user.id}" data-name="${safeName}" data-advisor-id="${user.assignedFacultyAdvisorId || ''}" aria-label="Assign advisor for ${safeName}">👨‍🏫 Assign</button>` : ''}
+            ${user.id !== 'ADM-001' ? `<button type="button" class="btn ${toggleActionClass} btn-sm btn-toggle-status" data-id="${user.id}" data-name="${safeName}" data-status="${safeStatus}" aria-label="${toggleActionText} user ${safeName}">${toggleActionText}</button>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach actions
+    tableBody.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', () => openEditUserModal(btn.dataset.id));
+    });
+    tableBody.querySelectorAll('.btn-assign-advisor').forEach(btn => {
+      btn.addEventListener('click', () => openAssignAdvisorModal(btn.dataset.id, btn.dataset.name, btn.dataset.advisorId));
+    });
+    tableBody.querySelectorAll('.btn-toggle-status').forEach(btn => {
+      btn.addEventListener('click', () => confirmToggleStatus(btn.dataset.id, btn.dataset.name, btn.dataset.status));
+    });
+
+  } catch (err) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsgEl) errorMsgEl.textContent = err.message || 'Failed to load user accounts.';
+    }
+  }
+}
+
+// Open Edit User Modal (TC_16, TC_17, TC_23)
+async function openEditUserModal(userId) {
+  try {
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+    const res = await fetch(`/api/admin/users/${userId}`, { headers });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Cannot load user details');
+
+    const user = data.user;
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('editUserName').value = user.name;
+    document.getElementById('editUserEmail').value = user.email;
+    document.getElementById('editUserRole').value = user.role;
+    document.getElementById('editUserStatus').value = user.status || 'Active';
+    document.getElementById('editUserDept').value = user.department || '';
+    document.getElementById('editUserSemester').value = user.semester || '';
+
+    await populateFacultyAdvisorDropdown('editUserAdvisor', user.assignedFacultyAdvisorId);
+
+    document.getElementById('editUserAlert')?.classList.add('hidden');
+    document.getElementById('editUserModal')?.classList.remove('hidden');
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+}
+
+// Open Assign Faculty Advisor Modal (US07 AC 3 & 4)
+async function openAssignAdvisorModal(studentId, studentName, currentAdvisorId) {
+  document.getElementById('assignAdvisorStudentId').value = studentId;
+  document.getElementById('assignAdvisorStudentName').textContent = studentName;
+  document.getElementById('assignAdvisorAlert')?.classList.add('hidden');
+
+  await populateFacultyAdvisorDropdown('assignAdvisorSelect', currentAdvisorId);
+  document.getElementById('assignAdvisorModal')?.classList.remove('hidden');
+}
+
+// Confirm Toggle Status (Active / Disabled) with Modal (TC_26, TC_27, TC_29, TC_39)
+function confirmToggleStatus(userId, userName, currentStatus) {
+  const targetStatus = currentStatus === 'Active' ? 'Disabled' : 'Active';
+  const actionText = targetStatus === 'Disabled' ? 'deactivate' : 'reactivate';
+
+  pendingAdminAction = {
+    type: 'TOGGLE_STATUS',
+    userId,
+    userName,
+    targetStatus
+  };
+
+  document.getElementById('confirmAdminActionTitle').textContent = `Confirm Account ${targetStatus === 'Disabled' ? 'Deactivation' : 'Reactivation'}`;
+  document.getElementById('confirmAdminActionMsg').textContent = `Are you sure you want to ${actionText} the account for ${userName}? ${targetStatus === 'Disabled' ? 'The user will no longer be able to log in to the portal.' : 'The user will regain access to their institutional account.'}`;
+
+  document.getElementById('confirmAdminActionModal')?.classList.remove('hidden');
+}
+

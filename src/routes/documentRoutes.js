@@ -337,4 +337,46 @@ router.put('/:id/replace', uploadSingle, async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/documents/:id - Delete / remove a student document (TC_40)
+ */
+router.delete('/:id', (req, res) => {
+  try {
+    const doc = db.getDocumentById(req.params.id);
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Ownership check: Students can only delete their own documents
+    if (req.user && req.user.role === 'Student' && doc.studentId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You cannot delete another student\'s document'
+      });
+    }
+
+    const removed = db.deleteDocument(req.params.id);
+    if (!removed) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to remove document'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Document removed successfully',
+      documentId: req.params.id
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
 module.exports = router;
