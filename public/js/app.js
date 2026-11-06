@@ -268,6 +268,25 @@ function setupEventListeners() {
     });
   }
 
+  // Student Notifications Filters & Actions (US05 / TC_01 - TC_40)
+  const btnRefreshNotifs = document.getElementById('btnRefreshNotifs');
+  const btnMarkAllNotifsRead = document.getElementById('btnMarkAllNotifsRead');
+  const notifSearchInput = document.getElementById('notifSearchInput');
+  const notifTypeFilter = document.getElementById('notifTypeFilter');
+  const btnClearNotifFilters = document.getElementById('btnClearNotifFilters');
+
+  if (btnRefreshNotifs) btnRefreshNotifs.addEventListener('click', loadStudentNotifications);
+  if (btnMarkAllNotifsRead) btnMarkAllNotifsRead.addEventListener('click', markAllStudentNotifsRead);
+  if (notifSearchInput) notifSearchInput.addEventListener('input', loadStudentNotifications);
+  if (notifTypeFilter) notifTypeFilter.addEventListener('change', loadStudentNotifications);
+  if (btnClearNotifFilters) {
+    btnClearNotifFilters.addEventListener('click', () => {
+      if (notifSearchInput) notifSearchInput.value = '';
+      if (notifTypeFilter) notifTypeFilter.value = 'All';
+      loadStudentNotifications();
+    });
+  }
+
   // Modal close handlers
   btnClosePreview.addEventListener('click', () => previewModal.classList.add('hidden'));
   btnClosePreviewBtn.addEventListener('click', () => previewModal.classList.add('hidden'));
@@ -1247,13 +1266,114 @@ function switchTab(tabId) {
   });
 
   if (tabId === 'documentsTab') loadDocuments();
+  if (tabId === 'notificationsTab') loadStudentNotifications();
   if (tabId === 'facultyTab') loadFacultyData();
   if (tabId === 'auditTab') loadAuditLogs();
 }
 
 async function refreshAllData() {
-  await Promise.all([loadDocuments(), loadFacultyData(), loadAuditLogs()]);
+  await Promise.all([loadDocuments(), loadStudentNotifications(), loadFacultyData(), loadAuditLogs()]);
 }
+
+// -------------------------------------------------------------
+// Student Notifications Operations (US05 & TC_01 - TC_40)
+// -------------------------------------------------------------
+async function loadStudentNotifications() {
+  const notifsListEl = document.getElementById('studentNotificationsList');
+  const countBadge = document.getElementById('studentNotifCount');
+  if (!notifsListEl) return;
+
+  try {
+    const searchEl = document.getElementById('notifSearchInput');
+    const typeEl = document.getElementById('notifTypeFilter');
+
+    const params = new URLSearchParams();
+    if (searchEl && searchEl.value.trim()) params.set('search', searchEl.value.trim());
+    if (typeEl && typeEl.value !== 'All') params.set('type', typeEl.value);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`/api/notifications${queryStr}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Cannot load notifications');
+
+    const notifs = data.notifications || [];
+    const unreadCount = data.unreadCount !== undefined ? data.unreadCount : notifs.filter(n => !n.read).length;
+    if (countBadge) {
+      countBadge.textContent = unreadCount > 0 ? `${unreadCount} unread` : notifs.length;
+    }
+
+    if (notifs.length === 0) {
+      notifsListEl.innerHTML = '<p class="empty-state">No notifications matching your filter criteria.</p>';
+      return;
+    }
+
+    notifsListEl.innerHTML = notifs.map(n => `
+      <div class="notification-item ${n.read ? '' : 'unread'}" style="cursor:pointer;" onclick="openStudentNotification('${n.id}')">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+          <div style="flex:1;">
+            <div class="notif-title" style="display:flex; align-items:center; gap:8px;">
+              ${n.title && n.title.includes('Approved') ? '<span class="status-badge status-approved" style="font-size:0.7rem;">✓ APPROVED</span>' : '<span class="status-badge status-rejected" style="font-size:0.7rem;">✕ REJECTED</span>'}
+              <strong>${escapeHtml(n.title)}</strong>
+              ${!n.read ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem;">UNREAD</span>' : '<span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.65rem;">READ</span>'}
+            </div>
+            <div style="font-size:0.8rem; color:#475569; margin:4px 0 2px 0;">
+              Document: <strong>${escapeHtml(n.documentTitle || 'Document')}</strong> &bull; Received: ${new Date(n.createdAt).toLocaleString()}
+            </div>
+            <div class="notif-message" style="margin-top:4px; font-size:0.875rem;">${escapeHtml(n.message)}</div>
+          </div>
+          <div style="margin-left:12px; display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+            <span class="notif-time" style="font-size:0.75rem; color:#94a3b8;">${new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            ${!n.read ? `<button class="btn btn-secondary btn-sm" style="font-size:0.7rem; padding:2px 6px;" onclick="event.stopPropagation(); markNotifRead('${n.id}')">Mark Read</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    if (notifsListEl) notifsListEl.innerHTML = `<p class="field-feedback error" style="display:block;">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+window.markNotifRead = async function(id) {
+  try {
+    const res = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error marking read');
+    await loadStudentNotifications();
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+};
+
+window.markAllStudentNotifsRead = async function() {
+  try {
+    const res = await fetch('/api/notifications/read-all', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error marking all read');
+    showAlert('All notifications marked as read', 'success');
+    await loadStudentNotifications();
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+};
+
+window.openStudentNotification = async function(id) {
+  try {
+    const res = await fetch(`/api/notifications/${id}/open`);
+    const data = await res.json();
+    await loadStudentNotifications();
+    if (!data.document) {
+      showAlert('The document linked to this notification is no longer available.', 'warning');
+      return;
+    }
+    // Switch to documents tab and show doc preview
+    switchTab('documentsTab');
+    if (data.document.id) {
+      viewDocument(data.document.id, data.document.title, data.document.mimeType);
+    }
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+};
 
 function showAlert(message, type = 'danger') {
   const alert = document.createElement('div');

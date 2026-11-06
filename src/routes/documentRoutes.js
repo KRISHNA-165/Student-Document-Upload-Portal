@@ -224,7 +224,7 @@ router.post('/:id/review', requireRole('Faculty'), async (req, res) => {
 });
 
 /**
- * GET /api/documents/:id/history - Review history for a document (TC_39)
+ * GET /api/documents/:id/history - Review history for a document (US05)
  */
 router.get('/:id/history', (req, res) => {
   try {
@@ -234,6 +234,29 @@ router.get('/:id/history', (req, res) => {
       success: true,
       documentId: req.params.id,
       documentTitle: doc.title,
+      count: history.length,
+      history
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/documents/:id/review-history - Alias for review history (US05)
+ */
+router.get('/:id/review-history', (req, res) => {
+  try {
+    const doc = documentService.getDocumentById(req.params.id, req.user);
+    const history = db.getReviewsForDocument(req.params.id);
+    return res.json({
+      success: true,
+      documentId: req.params.id,
+      documentTitle: doc.title,
+      count: history.length,
       history
     });
   } catch (err) {

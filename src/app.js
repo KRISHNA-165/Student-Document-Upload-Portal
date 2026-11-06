@@ -22,6 +22,7 @@ app.use('/api', authMiddleware);
 
 // API routes
 app.use('/api/documents', documentRoutes);
+app.use('/api/student/documents', documentRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);

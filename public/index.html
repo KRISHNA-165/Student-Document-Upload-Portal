@@ -362,6 +362,9 @@
         <button class="tab-button" id="tabDocumentsBtn" data-tab="documentsTab" role="tab" aria-selected="false">
           📂 My Documents <span class="badge" id="myDocsCount">0</span>
         </button>
+        <button class="tab-button" id="tabNotificationsBtn" data-tab="notificationsTab" role="tab" aria-selected="false">
+          🔔 Notifications <span class="badge badge-primary" id="studentNotifCount">0</span>
+        </button>
         <button class="tab-button" id="tabFacultyBtn" data-tab="facultyTab" role="tab" aria-selected="false">
           👨‍🏫 Faculty Advisor Inbox <span class="badge badge-primary" id="facultyNotifCount">0</span>
         </button>
@@ -565,6 +568,42 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: STUDENT NOTIFICATIONS (TC_01 - TC_40) ================= -->
+      <section id="notificationsTab" class="tab-panel" role="tabpanel">
+        <div class="card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>Notifications</h2>
+              <p class="section-desc">Real-time status updates and feedback from your Faculty Advisor.</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-secondary btn-sm" id="btnMarkAllNotifsRead">Mark All as Read</button>
+              <button class="btn btn-secondary btn-sm" id="btnRefreshNotifs">🔄 Refresh</button>
+            </div>
+          </div>
+
+          <!-- Notification Search & Filter Bar (TC_15 - TC_17, TC_32, TC_33) -->
+          <div class="notif-filters-bar" style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:1; min-width:200px;">
+              <input type="text" id="notifSearchInput" class="form-control" placeholder="🔍 Search notifications by document title...">
+            </div>
+            <div style="display:flex; gap:8px;">
+              <select id="notifTypeFilter" class="form-control" style="width:auto;">
+                <option value="All">All Types</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="btnClearNotifFilters">Clear</button>
+            </div>
+          </div>
+
+          <!-- Student Notifications List (TC_02 - TC_14) -->
+          <div class="notifications-list" id="studentNotificationsList">
+            <p class="empty-state">No notifications yet.</p>
           </div>
         </div>
       </section>

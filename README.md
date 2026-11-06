@@ -6,6 +6,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US02**: Faculty Review, Approval or Rejection
 - **User Story US03**: Replace Rejected Document
 - **User Story US04**: Faculty Submission and Resubmission Notifications & Student Document Tracking
+- **User Story US05**: Document Review History & Student Notifications
 
 ---
 
@@ -88,7 +89,22 @@ The application faithfully implements the Figma design specifications:
 
 ---
 
-## 🧪 Comprehensive Automated Test Suites (163/163 Tests Passing)
+## 📋 US05 Acceptance Criteria Verification (Document Review History & Student Notifications)
+
+| Requirement | Implementation Details | Status |
+|---|---|:---:|
+| **Maintain Every Review Activity** | System records and stores every single review decision as an independent immutable record in `reviewHistory`. | ✅ Passed |
+| **Complete History Details** | Each history entry contains **Faculty Advisor Name**, **Action Taken** (`APPROVED`/`REJECTED`), **Date and Time** (`reviewedAt`), and **Comments**. | ✅ Passed |
+| **Preserve Previous Rejection Records** | When a student replaces/resubmits a rejected document, all previous rejection records and feedback remain intact and cannot be deleted. | ✅ Passed |
+| **New Review Stored as Separate Activity** | Successive review cycles (e.g. Reject &rarr; Resubmit &rarr; Approve) append separate activity entries without overwriting previous history. | ✅ Passed |
+| **Faculty Can View History Before Decision** | Review history is presented directly inside the Faculty Review Panel before making a decision (`GET /api/documents/:id/history`). | ✅ Passed |
+| **Students Can View Review Comments** | Students can view historical feedback and comments via `GET /api/student/documents/:id/review-history` and in the My Documents modal. | ✅ Passed |
+| **Student Notification Center** | Dedicated notifications tab with unread count badges, read/unread filters, and document title search. | ✅ Passed |
+| **Notification to Document Navigation** | Clicking or opening a notification marks it as read and instantly navigates to the associated document details. | ✅ Passed |
+
+---
+
+## 🧪 Comprehensive Automated Test Suites (207/207 Tests Passing)
 
 ### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
 - **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
@@ -225,15 +241,62 @@ The application faithfully implements the Figma design specifications:
   - `US04_A02`: Resubmissions clearly identified in notification
   - `US04_A03`: Opening notification marks as Read and returns review details
 
+### 5. US05 Specification Suite (`tests/tc_us05_suite.test.js`)
+- **44/44 Tests Passing**:
+  - `TC_01`: Open Notifications page
+  - `TC_02`: Display approval notification
+  - `TC_03`: Display rejection notification
+  - `TC_04`: Include document title in notification
+  - `TC_05`: Include decision in notification message
+  - `TC_06`: Include rejection feedback in notification
+  - `TC_07`: Display notification date/time
+  - `TC_08`: Show unread notification indicator
+  - `TC_09`: Update unread count when notification is read
+  - `TC_10`: Mark a notification as read
+  - `TC_11`: Mark all notifications as read
+  - `TC_12`: Open notification linked to document
+  - `TC_13`: Display empty notification state
+  - `TC_14`: Separate read and unread notifications
+  - `TC_15`: Filter notifications by approval type
+  - `TC_16`: Filter notifications by rejection type
+  - `TC_17`: Clear notification filter
+  - `TC_18`: Handle a notification for a missing document
+  - `TC_19`: Prevent notification leakage between students
+  - `TC_20`: Prevent student access to another student's notification
+  - `TC_21`: Create notification after faculty approval
+  - `TC_22`: Create notification after faculty rejection
+  - `TC_23`: Avoid notification on cancelled review
+  - `TC_24`: Avoid duplicate notifications on repeated click
+  - `TC_25`: Keep notification after logout and login
+  - `TC_26`: Persist read state after refresh
+  - `TC_27`: Persist unread state after refresh
+  - `TC_28`: Handle notification service/network error
+  - `TC_29`: Handle failure when marking as read
+  - `TC_30`: Verify notification content is accurate
+  - `TC_31`: Verify notification order newest first
+  - `TC_32`: Search notifications by document title
+  - `TC_33`: Handle search with no notification matches
+  - `TC_34`: Display notification count consistently
+  - `TC_35`: Ensure faculty notification goes to correct reviewer
+  - `TC_36`: Prevent faculty viewing student-only notification details
+  - `TC_37`: Verify notification navigation works
+  - `TC_38`: Verify notification accessibility
+  - `TC_39`: Handle long notification feedback
+  - `TC_40`: Verify notification layout on mobile
+  - `US05_A01`: Every review activity stored as separate immutable record with faculty details
+  - `US05_A02`: Previous rejection records remain after resubmission and multiple cycles
+  - `US05_A03`: Student can view review history via `/api/student/documents/:id/review-history`
+  - `US05_A04`: Deny review history access to unauthorized students
+
 ```
-ℹ tests 163 | suites 4 | pass 163 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 207 | suites 5 | pass 207 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 163 Tests
+### Run All 207 Tests
 ```bash
 npm test
 ```
@@ -244,6 +307,7 @@ npm run test:us01    # Runs 40 tests for US01
 npm run test:us02    # Runs 40 tests for US02
 npm run test:us03    # Runs 40 tests for US03
 npm run test:us04    # Runs 43 tests for US04
+npm run test:us05    # Runs 44 tests for US05
 ```
 
 ### Start Server

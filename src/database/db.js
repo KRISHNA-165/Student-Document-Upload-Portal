@@ -177,6 +177,20 @@ class Database {
     return null;
   }
 
+  markAllNotificationsRead(recipientId) {
+    const now = new Date().toISOString();
+    let count = 0;
+    this.data.notifications.forEach(n => {
+      if (n.recipientId === recipientId && !n.read) {
+        n.read = true;
+        n.readAt = now;
+        count++;
+      }
+    });
+    if (count > 0) this.save();
+    return count;
+  }
+
   // Review History
   insertReview(review) {
     if (!this.data.reviewHistory) {

@@ -47,6 +47,74 @@ class NotificationService {
     return db.getNotifications(userId);
   }
 
+  getUserNotifications(userId, options = {}) {
+    let list = db.getNotifications(userId);
+
+    // Filter by type (Approved, Rejected) - TC_15, TC_16, TC_17
+    if (options.type && options.type !== 'all' && options.type !== 'All') {
+      const typeLower = options.type.toLowerCase();
+      list = list.filter(n => {
+        const titleMatch = n.title && n.title.toLowerCase().includes(typeLower);
+        const msgMatch = n.message && n.message.toLowerCase().includes(typeLower);
+        const actionMatch = n.action && n.action.toLowerCase() === typeLower;
+        return titleMatch || msgMatch || actionMatch;
+      });
+    }
+
+    // Search by title or text - TC_32, TC_33
+    if (options.search && typeof options.search === 'string' && options.search.trim().length > 0) {
+      const q = options.search.trim().toLowerCase();
+      list = list.filter(n => {
+        const titleMatch = n.title && n.title.toLowerCase().includes(q);
+        const docTitleMatch = n.documentTitle && n.documentTitle.toLowerCase().includes(q);
+        const msgMatch = n.message && n.message.toLowerCase().includes(q);
+        return titleMatch || docTitleMatch || msgMatch;
+      });
+    }
+
+    // Sort newest first by default - TC_31
+    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const allUserNotifs = db.getNotifications(userId);
+    const unreadCount = allUserNotifs.filter(n => !n.read).length;
+
+    return {
+      notifications: list,
+      total: list.length,
+      unreadCount
+    };
+  }
+
+  markAllAsRead(userId) {
+    return db.markAllNotificationsRead(userId);
+  }
+
+  openStudentNotification(notificationId, studentUser) {
+    const notif = db.getNotificationById(notificationId);
+    if (!notif) {
+      const err = new Error('Notification not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (notif.recipientId !== studentUser.id) {
+      const err = new Error('Access denied: You cannot access notifications belonging to another user');
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // Mark as read
+    db.markNotificationRead(notificationId, studentUser.id);
+
+    // Resolve document
+    const doc = db.getDocumentById(notif.documentId);
+    return {
+      notification: notif,
+      document: doc,
+      documentFound: Boolean(doc)
+    };
+  }
+
   getFacultyNotifications(facultyId) {
     const list = db.getNotifications(facultyId);
     const unreadCount = list.filter(n => !n.read).length;
