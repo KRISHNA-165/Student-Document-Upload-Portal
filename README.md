@@ -1,125 +1,128 @@
 # AcademiaFlow · Student Document Upload & Verification Portal
-## User Story US01: Student Document Upload
 
-An enterprise-grade, secure, and intuitive web application designed for academic institutions to allow students to upload achievement certificates and internship documents, store them securely in private storage, and submit them for Faculty Advisor verification.
+An enterprise-grade, secure, and intuitive web application designed for academic institutions.
+
+- **User Story US01**: Student Document Upload
+- **User Story US02**: Faculty Review, Approval or Rejection
 
 ---
 
-## 🎨 Visual Design & Architecture
+## 🎨 Visual Design System (AcademiaFlow & Figma Specs)
 
-The application design matches the **AcademiaFlow** institutional design system:
+The application faithfully implements the Figma design specifications:
 - **Landing Page**:
-  - Header with official **AcademiaFlow** branding and Quick Login.
+  - Official **AcademiaFlow** branding and Quick Login.
   - Hero Section: *"Student Document Upload & Approval Portal"* with Student, Faculty, and Admin Login CTAs.
   - Interactive 3D perspective flow diagram of the verification lifecycle.
-  - **Core Platform Capabilities**: 6 modular feature cards detailing Uncompromised Security, Total Transparency, Workflow Efficiency, Centralized Storage, Role-Based Access, and Comprehensive Reporting.
-  - **The Approval Lifecycle**: 6-step visual path (Register &rarr; Fill Details &rarr; Upload &rarr; Review &rarr; Approval &rarr; Archive).
+  - **Core Platform Capabilities**: 6 feature cards (Uncompromised Security, Total Transparency, Workflow Efficiency, Centralized Storage, Role-Based Access, Comprehensive Reporting).
+  - **The Approval Lifecycle**: 6-step visual workflow (Register &rarr; Fill Details &rarr; Upload &rarr; Review &rarr; Approval &rarr; Archive).
 - **Sign In Experience**:
-  - Institutional login modal matching the exact design with segmented role pills: **`🎓 Student`**, **`👨‍🏫 Faculty`**, **`🛡️ Admin`**.
-  - Direct persona switching for seamless demonstration.
+  - Segmented role selector tabs: **`🎓 Student`**, **`👨‍🏫 Faculty`**, **`🛡️ Admin`**.
+  - One-click demo credential switching.
 - **Student Upload Workspace (US01)**:
   - Form validation with real-time feedback: **Document Title**, **Category**, **Date of Achievement**, **Issuing Organization**.
-  - File drag-and-drop & file selector (PDF, JPG, JPEG, PNG up to 10 MB).
-  - Validation checklist: Upload button remains strictly disabled until all fields are complete and valid.
-  - Double-submission guard preventing duplicate submissions on rapid clicks.
-  - Document status automatically assigned as **`Pending Approval`**.
-  - Automatic timestamping and linkage to student profile.
-- **Document Management**:
-  - **My Documents**: View/preview documents inline (PDF iframe / image modal), download authenticated files, and replace documents while in *Pending Approval* state.
-- **Faculty Advisor Portal**:
-  - Real-time notification inbox: Faculty Advisors receive instant notifications upon student uploads.
-  - Submissions review list.
-- **System Audit Log**:
-  - Immutable audit trail recording upload and replacement actions.
+  - File drag-and-drop & file selector (**PDF, JPG, JPEG, PNG up to 10 MB** with magic byte checking).
+  - Validation checklist: Upload button remains disabled until all fields are complete and valid.
+  - Double-click guard preventing duplicate submissions.
+  - Automatically records upload date/time, sets status to **`Pending Approval`**, and notifies assigned advisor.
+  - **My Documents**: View/preview documents inline, download authenticated files, and replace documents while in *Pending Approval*.
+- **Faculty Review Panel (US02)**:
+  - Matching the exact **Faculty Review Panel** Figma frame:
+    - **Header**: Document title with back button.
+    - **Student & Metadata Card**: Student Name, Registration Number, Document Title, Category, Issuing Organization, Upload Date & Time, and Status badge.
+    - **Document Attachment Preview**: Interactive embedded preview (PDF & Image viewer) with safe error handling if file is missing.
+    - **Reviewer Remarks / Feedback**: Textarea for comments (mandatory for rejection, optional for approval).
+    - **Decision Buttons**: `Approve Document` and `Reject Document` with confirmation dialogs.
+    - **Decision History**: Audit history displaying reviewer name, role, decision, timestamp, and comments.
+  - **Review Queue**: Real-time search by student name/ID/title, category filter, status filter, and upload date range.
 
 ---
 
-## 📋 Acceptance Criteria Verification
+## 📋 US02 Acceptance Criteria Verification
 
 | Requirement | Implementation Details | Status |
 |---|---|:---:|
-| **Allowed File Types** | Accepts **PDF, JPG, JPEG, and PNG** files only. Rejects EXE, DOCX, ZIP, etc. Validates both extension and file magic bytes signatures (`%PDF-`, `FF D8 FF`, `89 50 4E 47`). | ✅ Passed |
-| **Maximum File Size** | Strict **10 MB limit** (10,485,760 bytes). Files exceeding 10 MB are rejected with clear error communication; files exactly at 10 MB are accepted. | ✅ Passed |
-| **Mandatory Fields** | `Document Title`, `Category`, `Date of Achievement`, `Issuing Organization`, and document `file` are all required. | ✅ Passed |
-| **Upload Button State** | Upload button remains disabled until all mandatory fields are valid. Becomes enabled once complete. | ✅ Passed |
-| **Initial Status** | Automatically set to **`Pending Approval`**. | ✅ Passed |
-| **Timestamping** | Upload date and time are recorded automatically at the moment of submission. | ✅ Passed |
-| **View / Download / Replace** | Student can preview inline, download authorized file, or replace document while in permitted status. | ✅ Passed |
-| **Faculty Notification** | Assigned Faculty Advisor receives an automated notification upon document submission. | ✅ Passed |
-| **Student Profile Linkage** | Document record remains associated with the student profile (`studentId`, `studentName`). | ✅ Passed |
+| **Assigned Students Only** | Faculty can view and review documents submitted *only* by their assigned students (unassigned access blocked with 403). | ✅ Passed |
+| **Required Display Fields** | Explicitly displays **Student Name**, **Registration Number**, **Document Title**, **Category**, **Upload Date**, and **Current Status**. | ✅ Passed |
+| **Document Preview** | Streams file via authorized endpoint (`/api/documents/:id/preview`) with support for PDF, JPG, and PNG. | ✅ Passed |
+| **Approve / Reject Decisions** | Faculty can Approve or Reject eligible `Pending Approval` documents. | ✅ Passed |
+| **Immediate Status Update** | Document status changes immediately to `Approved` or `Rejected`. | ✅ Passed |
+| **Rejection Reason** | Non-empty rejection reason is strictly required before rejecting a submission. | ✅ Passed |
+| **Optional Approval Comment** | Approval comments are optional. | ✅ Passed |
+| **Student Notification** | Student receives automated notification immediately upon decision with feedback. | ✅ Passed |
+| **Review Action Recording** | Reviewer identity, decision action, timestamp, and comments are persisted in review history. | ✅ Passed |
 
 ---
 
-## 🧪 Automated Test Suite (TC_01 to TC_40)
+## 🧪 Comprehensive Automated Test Suites (80/80 Tests Passing)
 
-All 40 formal test cases specified in the test catalog are fully implemented and passing:
+### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
+- **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
+
+### 2. US02 Specification Suite (`tests/tc_us02_suite.test.js`)
+- **40/40 Tests Passing**:
+  - `TC_01`: Open Faculty Dashboard
+  - `TC_02`: View assigned students submissions
+  - `TC_03`: Verify student name is displayed
+  - `TC_04`: Verify registration number is displayed
+  - `TC_05`: Verify document title is displayed
+  - `TC_06`: Verify category is displayed
+  - `TC_07`: Verify upload date is displayed
+  - `TC_08`: Verify current status is displayed
+  - `TC_09`: Open a pending document for review
+  - `TC_10`: Preview a supported PDF
+  - `TC_11`: Preview a supported image
+  - `TC_12`: Handle a missing file reference
+  - `TC_13`: Approve a pending document
+  - `TC_14`: Approve with an optional comment
+  - `TC_15`: Approve without a comment
+  - `TC_16`: Reject with a reason
+  - `TC_17`: Prevent rejection without a reason
+  - `TC_18`: Cancel approval confirmation
+  - `TC_19`: Cancel rejection confirmation
+  - `TC_20`: Update status immediately after approval
+  - `TC_21`: Update status immediately after rejection
+  - `TC_22`: Record reviewer identity
+  - `TC_23`: Record review date and time automatically
+  - `TC_24`: Prevent unauthorized faculty review
+  - `TC_25`: Prevent student from using faculty review actions
+  - `TC_26`: Prevent admin-only action by faculty
+  - `TC_27`: Review only Pending Approval documents in pending queue
+  - `TC_28`: Verify approved document leaves pending queue
+  - `TC_29`: Verify rejected document leaves pending queue
+  - `TC_30`: Prevent conflicting repeated decision
+  - `TC_31`: Search pending reviews by student name
+  - `TC_32`: Filter reviews by category
+  - `TC_33`: Filter reviews by upload date range
+  - `TC_34`: Handle unavailable review data with friendly error
+  - `TC_35`: Prevent double-click duplicate approval
+  - `TC_36`: Notify student after approval
+  - `TC_37`: Notify student after rejection with feedback
+  - `TC_38`: Save review comments accurately
+  - `TC_39`: Maintain review history after decision
+  - `TC_40`: Handle save failure during review
 
 ```
-▶ US01 - Student Document Upload Specification Tests (TC_01 to TC_40)
-  ✔ TC_01: Validate upload form opens (Upload form displayed with all required fields)
-  ✔ TC_02: Validate Document Title field is present
-  ✔ TC_03: Validate Category field is present
-  ✔ TC_04: Validate Date of Achievement field is present
-  ✔ TC_05: Validate Issuing Organization field is present
-  ✔ TC_06: Upload a valid PDF file
-  ✔ TC_07: Upload a valid JPG file
-  ✔ TC_08: Upload a valid JPEG file
-  ✔ TC_09: Upload a valid PNG file
-  ✔ TC_10: Reject an unsupported EXE file
-  ✔ TC_11: Reject an unsupported DOCX file
-  ✔ TC_12: Reject an unsupported ZIP file
-  ✔ TC_13: Reject file exceeding 10 MB (12 MB file rejected with 10 MB limit feedback)
-  ✔ TC_14: Accept file at configured 10 MB limit (exact 10 * 1024 * 1024 bytes)
-  ✔ TC_15: Reject empty Document Title
-  ✔ TC_16: Reject empty Category
-  ✔ TC_17: Reject empty Date of Achievement
-  ✔ TC_18: Reject empty Issuing Organization
-  ✔ TC_19: Reject submission with all required fields empty
-  ✔ TC_20: Keep Upload disabled until fields are complete
-  ✔ TC_21: Enable Upload after required fields are complete
-  ✔ TC_22: Reject future achievement date if disallowed
-  ✔ TC_23: Accept a valid past achievement date (2024-06-15)
-  ✔ TC_24: Handle invalid date input (e.g. 2024-15-40)
-  ✔ TC_25: Accept a long but valid document title
-  ✔ TC_26: Trim whitespace-only title and block upload
-  ✔ TC_27: Trim whitespace around organization name cleanly
-  ✔ TC_28: Upload certificate with special characters in title
-  ✔ TC_29: Upload achievement certificate category
-  ✔ TC_30: Upload internship document category
-  ✔ TC_31: Prevent double submission on repeated click
-  ✔ TC_32: Show upload success confirmation
-  ✔ TC_33: Set initial status to Pending Approval
-  ✔ TC_34: Record upload date and time automatically
-  ✔ TC_35: Link uploaded document to student profile
-  ✔ TC_36: Show uploaded document in document list
-  ✔ TC_37: Allow viewing uploaded document when permitted
-  ✔ TC_38: Allow downloading uploaded document when permitted
-  ✔ TC_39: Allow replacing document only when permitted (in Pending Approval status)
-  ✔ TC_40: Notify Faculty Advisor after upload
-
-ℹ tests 40 | suites 1 | pass 40 | fail 0
+ℹ tests 80 | suites 2 | pass 80 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run Locally
 
-### 1. Run the Automated Test Suite
+### Run All 80 Tests
 ```bash
 npm test
 ```
 
-### 2. Start the Application Server
+### Run Specific Test Suite
+```bash
+npm run test:us01    # Runs 40 tests for US01
+npm run test:us02    # Runs 40 tests for US02
+```
+
+### Start Server
 ```bash
 npm start
 ```
-The application will be accessible at:
-```
-http://localhost:3000
-```
-
-### 3. Exploring Personas
-- **Student Persona**: `John Doe (STU-2024-001)` — Uploads documents, tracks Pending Approval status, views/downloads/replaces certificates.
-- **Faculty Advisor Persona**: `Dr. Robert Smith (FAC-101)` — Receives automated submission notifications and reviews student records.
-- **Admin Persona**: `Administrator` — Views system security audit trails and platform logs.
-
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.

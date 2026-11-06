@@ -2,6 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const CONSTANTS = require('../config/constants');
 const documentService = require('../services/documentService');
+const reviewService = require('../services/reviewService');
+const db = require('../database/db');
 const { requireRole } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -10,8 +12,6 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    // Allow slightly larger than 10MB into multer so our custom validation can return exact friendly error,
-    // but cap at 20MB to prevent memory exhaustion
     fileSize: 20 * 1024 * 1024
   }
 });
@@ -48,9 +48,6 @@ router.post('/', uploadSingle, async (req, res) => {
   try {
     const { title, category, dateOfAchievement, issuingOrganization } = req.body;
     const file = req.file;
-
-    // Double submission prevention support: Check for active lock if header provided
-    const idempotencyKey = req.headers['x-idempotency-key'];
 
     const document = await documentService.uploadDocument({
       user: req.user,
@@ -163,6 +160,83 @@ router.get('/:id/view', (req, res) => {
 });
 
 /**
+ * GET /api/documents/:id/preview - Authorized file preview (alias with missing file handling, TC_10, TC_11, TC_12)
+ */
+router.get('/:id/preview', (req, res) => {
+  try {
+    const { filePath, originalFilename, mimeType } = documentService.getAuthorizedFile(
+      req.params.id,
+      req.user
+    );
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(originalFilename)}"`);
+    res.sendFile(filePath, (fileErr) => {
+      if (fileErr && !res.headersSent) {
+        return res.status(404).json({
+          success: false,
+          message: 'The requested document file is currently unavailable in file storage.'
+        });
+      }
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: err.message || 'File reference unavailable'
+    });
+  }
+});
+
+/**
+ * POST /api/documents/:id/review - Review decision by faculty (US02)
+ */
+router.post('/:id/review', requireRole('Faculty'), async (req, res) => {
+  try {
+    const { decision, comment } = req.body;
+    const result = await reviewService.submitDecision({
+      documentId: req.params.id,
+      facultyUser: req.user,
+      decision,
+      comment
+    });
+
+    return res.json({
+      success: true,
+      message: `Document decision recorded: ${result.document.status}`,
+      document: result.document,
+      review: result.review
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/documents/:id/history - Review history for a document (TC_39)
+ */
+router.get('/:id/history', (req, res) => {
+  try {
+    const doc = documentService.getDocumentById(req.params.id, req.user);
+    const history = db.getReviewsForDocument(req.params.id);
+    return res.json({
+      success: true,
+      documentId: req.params.id,
+      documentTitle: doc.title,
+      history
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
  * PUT /api/documents/:id/replace - Replace document file/metadata when permitted
  */
 router.put('/:id/replace', uploadSingle, async (req, res) => {
@@ -198,4 +272,3 @@ router.put('/:id/replace', uploadSingle, async (req, res) => {
 });
 
 module.exports = router;
-

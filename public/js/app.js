@@ -263,6 +263,9 @@ function setupEventListeners() {
     successModal.classList.add('hidden');
     switchTab('documentsTab');
   });
+
+  // Setup US02 Faculty Review handlers
+  setupFacultyReviewListeners();
 }
 
 // -------------------------------------------------------------
@@ -708,11 +711,252 @@ async function handleReplaceSubmit(e) {
 }
 
 // -------------------------------------------------------------
-// Faculty Advisor View & Notifications
+// Faculty Advisor View & Verification Operations (US02)
 // -------------------------------------------------------------
+let pendingDecisionData = null;
+let isReviewingDecision = false;
+
+// Filter and search elements
+const facultySearchInput = document.getElementById('facultySearchInput');
+const facultyCategoryFilter = document.getElementById('facultyCategoryFilter');
+const facultyStatusFilter = document.getElementById('facultyStatusFilter');
+const facultyStartDate = document.getElementById('facultyStartDate');
+const facultyEndDate = document.getElementById('facultyEndDate');
+const btnClearFacultyFilters = document.getElementById('btnClearFacultyFilters');
+
+// Review panel elements
+const facultyReviewModal = document.getElementById('facultyReviewModal');
+const btnCloseFacultyReview = document.getElementById('btnCloseFacultyReview');
+const btnBackFromReview = document.getElementById('btnBackFromReview');
+const btnApproveDocument = document.getElementById('btnApproveDocument');
+const btnRejectDocument = document.getElementById('btnRejectDocument');
+const reviewCommentInput = document.getElementById('reviewCommentInput');
+const reviewCommentFeedback = document.getElementById('reviewCommentFeedback');
+const reviewFilePreview = document.getElementById('reviewFilePreview');
+const reviewDownloadLink = document.getElementById('reviewDownloadLink');
+
+// Decision confirmation elements
+const decisionConfirmModal = document.getElementById('decisionConfirmModal');
+const btnCloseConfirm = document.getElementById('btnCloseConfirm');
+const btnCancelConfirm = document.getElementById('btnCancelConfirm');
+const btnExecuteDecision = document.getElementById('btnExecuteDecision');
+const decisionConfirmText = document.getElementById('decisionConfirmText');
+const decisionConfirmCommentSummary = document.getElementById('decisionConfirmCommentSummary');
+
+function setupFacultyReviewListeners() {
+  if (facultySearchInput) {
+    let debounceTimer;
+    facultySearchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(loadFacultyData, 300);
+    });
+  }
+
+  if (facultyCategoryFilter) facultyCategoryFilter.addEventListener('change', loadFacultyData);
+  if (facultyStatusFilter) facultyStatusFilter.addEventListener('change', loadFacultyData);
+  if (facultyStartDate) facultyStartDate.addEventListener('change', loadFacultyData);
+  if (facultyEndDate) facultyEndDate.addEventListener('change', loadFacultyData);
+
+  if (btnClearFacultyFilters) {
+    btnClearFacultyFilters.addEventListener('click', () => {
+      if (facultySearchInput) facultySearchInput.value = '';
+      if (facultyCategoryFilter) facultyCategoryFilter.value = 'ALL';
+      if (facultyStatusFilter) facultyStatusFilter.value = 'Pending Approval';
+      if (facultyStartDate) facultyStartDate.value = '';
+      if (facultyEndDate) facultyEndDate.value = '';
+      loadFacultyData();
+    });
+  }
+
+  if (btnCloseFacultyReview) {
+    btnCloseFacultyReview.addEventListener('click', () => facultyReviewModal.classList.add('hidden'));
+  }
+  if (btnBackFromReview) {
+    btnBackFromReview.addEventListener('click', () => facultyReviewModal.classList.add('hidden'));
+  }
+
+  // Approve Document Button Click -> Open Confirmation
+  if (btnApproveDocument) {
+    btnApproveDocument.addEventListener('click', () => {
+      const docId = document.getElementById('reviewDocId').value;
+      const comment = reviewCommentInput.value.trim();
+      reviewCommentFeedback.textContent = '';
+      promptDecisionConfirmation('Approve', docId, comment);
+    });
+  }
+
+  // Reject Document Button Click -> Validate Comment & Open Confirmation
+  if (btnRejectDocument) {
+    btnRejectDocument.addEventListener('click', () => {
+      const docId = document.getElementById('reviewDocId').value;
+      const comment = reviewCommentInput.value.trim();
+
+      if (!comment) {
+        reviewCommentFeedback.textContent = 'A rejection reason is required before rejecting a submission.';
+        reviewCommentInput.focus();
+        return;
+      }
+
+      reviewCommentFeedback.textContent = '';
+      promptDecisionConfirmation('Reject', docId, comment);
+    });
+  }
+
+  // Confirmation Modal actions
+  if (btnCloseConfirm) {
+    btnCloseConfirm.addEventListener('click', () => {
+      decisionConfirmModal.classList.add('hidden');
+      pendingDecisionData = null;
+    });
+  }
+  if (btnCancelConfirm) {
+    btnCancelConfirm.addEventListener('click', () => {
+      decisionConfirmModal.classList.add('hidden');
+      pendingDecisionData = null;
+    });
+  }
+  if (btnExecuteDecision) {
+    btnExecuteDecision.addEventListener('click', handleExecuteDecision);
+  }
+}
+
+function promptDecisionConfirmation(decision, docId, comment) {
+  pendingDecisionData = { decision, docId, comment };
+  decisionConfirmText.textContent = `Are you sure you want to mark this document as "${decision}"?`;
+  decisionConfirmCommentSummary.innerHTML = `<strong>Decision:</strong> <span class="badge ${decision === 'Approve' ? 'badge-primary' : ''}">${decision}</span><br><strong>Comment:</strong> ${comment ? escapeHtml(comment) : '<em>None</em>'}`;
+  decisionConfirmModal.classList.remove('hidden');
+}
+
+async function handleExecuteDecision() {
+  if (!pendingDecisionData || isReviewingDecision) return;
+
+  const { decision, docId, comment } = pendingDecisionData;
+  isReviewingDecision = true;
+  btnExecuteDecision.disabled = true;
+
+  try {
+    const res = await fetch(`/api/documents/${docId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision, comment })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Review submission failed');
+    }
+
+    showAlert(`Document successfully marked as ${decision}.`, 'success');
+    decisionConfirmModal.classList.add('hidden');
+    facultyReviewModal.classList.add('hidden');
+    pendingDecisionData = null;
+
+    // Refresh review queue, notifications and documents list immediately
+    await refreshAllData();
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  } finally {
+    isReviewingDecision = false;
+    btnExecuteDecision.disabled = false;
+  }
+}
+
+// Open Document Review Panel (TC_09)
+window.openReviewPanel = async function(id) {
+  try {
+    const res = await fetch(`/api/faculty/documents/${id}`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Cannot load document for review');
+    }
+
+    const doc = data.document;
+    const history = data.history || [];
+
+    document.getElementById('reviewDocId').value = doc.id;
+    document.getElementById('reviewStudentName').textContent = doc.studentName || 'Student';
+    document.getElementById('reviewRegNumber').textContent = doc.registrationNumber || doc.studentId;
+    document.getElementById('reviewDocTitle').textContent = doc.title;
+    document.getElementById('reviewCategory').textContent = doc.category;
+    document.getElementById('reviewOrg').textContent = doc.issuingOrganization;
+    document.getElementById('reviewUploadDate').textContent = new Date(doc.createdAt).toLocaleString();
+
+    const statusBadge = document.getElementById('reviewCurrentStatus');
+    statusBadge.textContent = doc.status;
+    statusBadge.className = `status-badge ${doc.status === 'Pending Approval' ? 'status-pending' : (doc.status === 'Approved' ? 'status-approved' : 'status-rejected')}`;
+
+    // Reset decision fields
+    reviewCommentInput.value = '';
+    reviewCommentFeedback.textContent = '';
+
+    // Show/hide action buttons if already reviewed
+    const isPending = doc.status === 'Pending Approval';
+    btnApproveDocument.style.display = isPending ? 'inline-flex' : 'none';
+    btnRejectDocument.style.display = isPending ? 'inline-flex' : 'none';
+    reviewCommentInput.disabled = !isPending;
+
+    // Set download link
+    reviewDownloadLink.href = `/api/documents/${doc.id}/download`;
+
+    // Render Preview Box
+    renderReviewPreview(doc);
+
+    // Render Review History (TC_39)
+    renderReviewHistory(history);
+
+    facultyReviewModal.classList.remove('hidden');
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+};
+
+function renderReviewPreview(doc) {
+  const previewUrl = `/api/documents/${doc.id}/preview`;
+
+  if (doc.fileAvailable === false) {
+    reviewFilePreview.innerHTML = `
+      <div style="text-align:center; padding:32px; color:#b91c1c;">
+        <p style="font-size:2rem; margin-bottom:8px;">⚠️</p>
+        <strong>Document file is currently unavailable in storage.</strong>
+        <p style="font-size:0.85rem; color:#64748b;">The document record exists but the binary attachment cannot be loaded.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (doc.mimeType === 'application/pdf') {
+    reviewFilePreview.innerHTML = `
+      <iframe src="${previewUrl}" title="PDF Preview"></iframe>
+    `;
+  } else {
+    reviewFilePreview.innerHTML = `
+      <img src="${previewUrl}" alt="${escapeHtml(doc.title)}" onerror="this.parentElement.innerHTML='<p style=\'padding:20px; color:#b91c1c;\'>Image file unavailable</p>'">
+    `;
+  }
+}
+
+function renderReviewHistory(history) {
+  const listEl = document.getElementById('reviewHistoryList');
+  if (!history || history.length === 0) {
+    listEl.innerHTML = '<p class="field-hint">No prior decisions recorded for this submission.</p>';
+    return;
+  }
+
+  listEl.innerHTML = history.map(h => `
+    <div class="review-history-item">
+      <div class="flex-between">
+        <strong>${escapeHtml(h.reviewerName)} (${escapeHtml(h.reviewerRole)})</strong>
+        <span class="status-badge ${h.action === 'Approved' ? 'status-approved' : 'status-rejected'}">${escapeHtml(h.action)}</span>
+      </div>
+      <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${new Date(h.timestamp).toLocaleString()}</div>
+      ${h.comments ? `<div style="margin-top:6px; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(h.comments)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
 async function loadFacultyData() {
   try {
-    // 1. Notifications
+    // 1. Notifications for Faculty
     const notifRes = await fetch('/api/notifications');
     const notifData = await notifRes.json();
     const notifications = notifData.notifications || [];
@@ -732,28 +976,53 @@ async function loadFacultyData() {
       `).join('');
     }
 
-    // 2. All Submissions
-    const docsRes = await fetch('/api/documents');
+    // 2. Assigned Submissions (with search and filters)
+    let queryParams = new URLSearchParams();
+    const searchVal = facultySearchInput ? facultySearchInput.value.trim() : '';
+    const categoryVal = facultyCategoryFilter ? facultyCategoryFilter.value : 'ALL';
+    const statusVal = facultyStatusFilter ? facultyStatusFilter.value : 'Pending Approval';
+    const startDateVal = facultyStartDate ? facultyStartDate.value : '';
+    const endDateVal = facultyEndDate ? facultyEndDate.value : '';
+
+    if (searchVal) queryParams.set('search', searchVal);
+    if (categoryVal) queryParams.set('category', categoryVal);
+    if (statusVal) queryParams.set('status', statusVal);
+    if (startDateVal) queryParams.set('startDate', startDateVal);
+    if (endDateVal) queryParams.set('endDate', endDateVal);
+
+    const docsRes = await fetch(`/api/faculty/documents?${queryParams.toString()}`);
     const docsData = await docsRes.json();
     const docs = docsData.documents || [];
 
     if (docs.length === 0) {
-      facultyDocsTableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No submissions pending review.</td></tr>';
+      facultyDocsTableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No student submissions matching the filter criteria.</td></tr>';
     } else {
-      facultyDocsTableBody.innerHTML = docs.map(d => `
-        <tr>
-          <td><strong>${escapeHtml(d.studentName || d.studentId)}</strong><br><small style="color:#64748b;">${escapeHtml(d.studentDepartment || '')}</small></td>
-          <td>${escapeHtml(d.title)}</td>
-          <td><span class="badge">${escapeHtml(d.category)}</span></td>
-          <td>${escapeHtml(d.dateOfAchievement)}</td>
-          <td><span class="status-badge status-pending">⏳ ${escapeHtml(d.status)}</span></td>
-          <td>${new Date(d.createdAt).toLocaleString()}</td>
-          <td>
-            <button class="btn-action" onclick="viewDocument('${d.id}', '${escapeHtml(d.title)}', '${d.mimeType}')">👁️ View</button>
-            <a href="/api/documents/${d.id}/download" class="btn-action" download>⬇️ Download</a>
-          </td>
-        </tr>
-      `).join('');
+      facultyDocsTableBody.innerHTML = docs.map(d => {
+        const statusClass = d.status === 'Pending Approval' ? 'status-pending' : (d.status === 'Approved' ? 'status-approved' : 'status-rejected');
+        return `
+          <tr>
+            <td><strong>${escapeHtml(d.studentName || d.studentId)}</strong></td>
+            <td><code>${escapeHtml(d.registrationNumber || d.studentId)}</code></td>
+            <td>
+              <strong>${escapeHtml(d.title)}</strong>
+              <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(d.issuingOrganization || '')}</div>
+            </td>
+            <td><span class="badge">${escapeHtml(d.category)}</span></td>
+            <td>${new Date(d.createdAt).toLocaleString()}</td>
+            <td><span class="status-badge ${statusClass}">${escapeHtml(d.status)}</span></td>
+            <td>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn-action" onclick="openReviewPanel('${d.id}')" title="Review submission">
+                  📋 Review
+                </button>
+                <button class="btn-action" onclick="viewDocument('${d.id}', '${escapeHtml(d.title)}', '${d.mimeType}')" title="Preview file">
+                  👁️ Preview
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
   } catch (err) {
     console.error('Failed to load faculty data:', err);

@@ -21,63 +21,88 @@
       "role": "Student"
     },
     {
+      "id": "STU-2024-003",
+      "name": "Alex Rivers",
+      "email": "alex.rivers@university.edu",
+      "department": "Electronics & Communication",
+      "semester": "4th Semester",
+      "assignedFacultyAdvisorId": "FAC-102",
+      "assignedFacultyAdvisorName": "Dr. Emily Davis",
+      "role": "Student"
+    },
+    {
       "id": "FAC-101",
       "name": "Dr. Robert Smith",
       "email": "robert.smith@university.edu",
       "department": "Computer Science & Engineering",
       "role": "Faculty"
+    },
+    {
+      "id": "FAC-102",
+      "name": "Dr. Emily Davis",
+      "email": "emily.davis@university.edu",
+      "department": "Electronics & Communication",
+      "role": "Faculty"
+    },
+    {
+      "id": "ADM-001",
+      "name": "System Administrator",
+      "email": "admin@university.edu",
+      "department": "Central Administration",
+      "role": "Admin"
     }
   ],
   "documents": [
     {
-      "id": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
+      "id": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
       "studentId": "STU-2024-001",
       "studentName": "John Doe",
       "studentDepartment": "Computer Science & Engineering",
       "assignedFacultyAdvisorId": "FAC-101",
-      "title": "Cloud Specialization",
-      "category": "Certification",
-      "dateOfAchievement": "2024-05-15",
-      "issuingOrganization": "AWS",
-      "originalFilename": "internship.pdf",
-      "storageKey": "e9396d86-fb84-4fc6-9871-85aa04d6a1bc.pdf",
+      "title": "Save Failure Doc",
+      "category": "Internship",
+      "dateOfAchievement": "2024-05-10",
+      "issuingOrganization": "Tech Org",
+      "originalFilename": "certificate.pdf",
+      "storageKey": "055aed12-4a31-4cd9-be62-624112dac798.pdf",
       "fileSize": 79,
       "mimeType": "application/pdf",
       "extension": ".pdf",
       "status": "Pending Approval",
-      "createdAt": "2026-11-05T10:49:00.295Z",
-      "updatedAt": "2026-11-05T10:49:00.295Z"
+      "createdAt": "2026-11-05T12:08:51.946Z",
+      "updatedAt": "2026-11-05T12:08:51.946Z"
     }
   ],
   "notifications": [
     {
-      "id": "NOTIF-3c042481-f007-4048-8e3b-bb09bf5c3a18",
+      "id": "NOTIF-4b5bf4c9-8a44-4de9-8c84-6df748e70723",
       "recipientId": "FAC-101",
       "senderId": "STU-2024-001",
-      "documentId": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
-      "documentTitle": "Cloud Specialization",
-      "category": "Certification",
+      "documentId": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
+      "documentTitle": "Save Failure Doc",
+      "category": "Internship",
       "title": "New Document Submitted for Verification",
-      "message": "Student John Doe has uploaded a new document \"Cloud Specialization\" under category \"Certification\" for review.",
+      "message": "Student John Doe has uploaded a new document \"Save Failure Doc\" under category \"Internship\" for review.",
       "read": false,
-      "createdAt": "2026-11-05T10:49:00.295Z"
+      "createdAt": "2026-11-05T12:08:51.946Z"
     }
   ],
   "auditLogs": [
     {
-      "id": "AUDIT-db3a506e-400d-409a-be09-13d39b0eeb6d",
+      "id": "AUDIT-332582ff-f001-498e-af8f-7b7df0ad0fb0",
       "action": "DOCUMENT_UPLOAD",
       "actorId": "STU-2024-001",
       "actorRole": "Student",
-      "targetId": "DOC-90e27d49-77fc-45f0-88f7-b6a2c41bc1de",
+      "targetId": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
       "details": {
-        "title": "Cloud Specialization",
-        "category": "Certification",
-        "originalFilename": "internship.pdf",
+        "title": "Save Failure Doc",
+        "category": "Internship",
+        "originalFilename": "certificate.pdf",
         "fileSize": 79,
-        "storageKey": "e9396d86-fb84-4fc6-9871-85aa04d6a1bc.pdf"
+        "storageKey": "055aed12-4a31-4cd9-be62-624112dac798.pdf"
       },
-      "timestamp": "2026-11-05T10:49:00.295Z"
+      "timestamp": "2026-11-05T12:08:51.946Z"
     }
-  ]
+  ],
+  "reviewHistory": []
 }

@@ -1309,6 +1309,129 @@ body {
   border: 1px solid #fecaca;
 }
 
+/* ================= US02: FACULTY REVIEW PANEL STYLES ================= */
+.faculty-filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: var(--af-radius-md);
+  border: 1px solid var(--af-border);
+  margin-bottom: 24px;
+}
+
+.filter-group-search .form-control {
+  width: 100%;
+}
+
+.filter-group-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.review-meta-card {
+  background: #f8fafc;
+  border: 1px solid var(--af-border);
+  border-radius: var(--af-radius-md);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.review-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 20px;
+  font-size: 0.88rem;
+}
+
+.meta-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--af-text-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 2px;
+}
+
+.meta-val {
+  color: var(--af-text-title);
+  font-size: 0.92rem;
+}
+
+.review-preview-section {
+  margin-bottom: 24px;
+}
+
+.review-file-preview-box {
+  background: #f1f5f9;
+  border: 1px solid var(--af-border);
+  border-radius: var(--af-radius-md);
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.review-file-preview-box iframe {
+  width: 100%;
+  height: 480px;
+  border: none;
+}
+
+.review-file-preview-box img {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+}
+
+.review-decision-section {
+  background: #ffffff;
+  border: 1px solid var(--af-border);
+  border-radius: var(--af-radius-md);
+  padding: 18px 20px;
+}
+
+.review-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-success {
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #059669;
+}
+
+.btn-success:hover {
+  background: #047857;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.review-history-item {
+  background: #f8fafc;
+  border: 1px solid var(--af-border);
+  border-radius: var(--af-radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
 .hidden {
   display: none !important;
 }

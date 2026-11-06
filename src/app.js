@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const { authMiddleware } = require('./middleware/authMiddleware');
 const documentRoutes = require('./routes/documentRoutes');
+const facultyRoutes = require('./routes/facultyRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const auditRoutes = require('./routes/auditRoutes');
@@ -20,6 +22,8 @@ app.use('/api', authMiddleware);
 
 // API routes
 app.use('/api/documents', documentRoutes);
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/audit-logs', auditRoutes);
@@ -43,4 +47,3 @@ app.use((err, req, res, next) => {
 });
 
 module.exports = app;
-
