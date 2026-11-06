@@ -1,5 +1,6 @@
 const express = require('express');
 const reviewService = require('../services/reviewService');
+const notificationService = require('../services/notificationService');
 const { requireRole } = require('../middleware/authMiddleware');
 const db = require('../database/db');
 
@@ -99,6 +100,77 @@ router.post('/documents/:id/review', requireRole('Faculty'), async (req, res) =>
       message: `Document successfully ${result.document.status.toLowerCase()}`,
       document: result.document,
       review: result.review
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/faculty/notifications
+ * View recent notifications for the logged-in Faculty Advisor (US04)
+ */
+router.get('/notifications', requireRole('Faculty'), (req, res) => {
+  try {
+    const result = notificationService.getFacultyNotifications(req.user.id);
+    return res.json({
+      success: true,
+      count: result.notifications.length,
+      unreadCount: result.unreadCount,
+      notifications: result.notifications
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * PATCH /api/faculty/notifications/:id/read
+ * Mark notification as Read (US04)
+ */
+router.patch('/notifications/:id/read', requireRole('Faculty'), (req, res) => {
+  try {
+    const updated = notificationService.markAsRead(req.params.id, req.user.id);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+    return res.json({
+      success: true,
+      message: 'Notification marked as read',
+      notification: updated
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/faculty/notifications/:id/open
+ * Open notification: marks as Read and returns linked review document details (US04)
+ */
+router.get('/notifications/:id/open', requireRole('Faculty'), (req, res) => {
+  try {
+    const result = notificationService.openNotification(req.params.id, req.user);
+    return res.json({
+      success: true,
+      notification: result.notification,
+      document: result.document,
+      reviewUrl: `/api/faculty/documents/${result.document.id}`
     });
   } catch (err) {
     const statusCode = err.statusCode || 500;

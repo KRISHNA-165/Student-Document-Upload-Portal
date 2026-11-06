@@ -518,6 +518,34 @@
             <button class="btn btn-secondary btn-sm" id="btnRefreshDocs">🔄 Refresh</button>
           </div>
 
+          <!-- Status Summary Counters (TC_27) -->
+          <div id="studentStatusSummary" class="status-summary-bar" style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+            <span class="badge" style="background:#f1f5f9; color:#475569; padding:6px 12px; border-radius:6px; font-weight:600;">Total Documents: <strong id="summaryTotal">0</strong></span>
+            <span class="badge" style="background:#eff6ff; color:#1d4ed8; padding:6px 12px; border-radius:6px; font-weight:600;">Pending: <strong id="summaryPending">0</strong></span>
+            <span class="badge" style="background:#ecfdf5; color:#047857; padding:6px 12px; border-radius:6px; font-weight:600;">Approved: <strong id="summaryApproved">0</strong></span>
+            <span class="badge" style="background:#fef2f2; color:#b91c1c; padding:6px 12px; border-radius:6px; font-weight:600;">Rejected: <strong id="summaryRejected">0</strong></span>
+          </div>
+
+          <!-- Search & Filter Controls (TC_12 - TC_22) -->
+          <div class="student-filters-bar" style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:1; min-width:200px;">
+              <input type="text" id="studentSearchInput" class="form-control" placeholder="🔍 Search document title (exact or partial)...">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <select id="studentStatusFilter" class="form-control" style="width:auto;">
+                <option value="All">All Statuses</option>
+                <option value="Pending Approval">Pending Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+              <select id="studentSortFilter" class="form-control" style="width:auto;">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" id="btnClearStudentFilters">Clear</button>
+            </div>
+          </div>
+
           <div class="documents-table-wrapper">
             <table class="documents-table" id="documentsTable">
               <thead>

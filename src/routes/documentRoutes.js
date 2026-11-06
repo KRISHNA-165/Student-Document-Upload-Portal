@@ -81,14 +81,22 @@ router.post('/', uploadSingle, async (req, res) => {
 router.get('/', (req, res) => {
   try {
     let docs = [];
+    let summary = null;
+    let total = 0;
     if (req.user.role === 'Student') {
-      docs = documentService.getDocumentsForStudent(req.user.id);
+      const result = documentService.getDocumentsForStudent(req.user.id, req.query);
+      docs = result.documents || result;
+      summary = result.summary || null;
+      total = result.total !== undefined ? result.total : docs.length;
     } else {
       docs = documentService.getAllDocuments();
+      total = docs.length;
     }
     return res.json({
       success: true,
       count: docs.length,
+      total,
+      summary,
       documents: docs
     });
   } catch (err) {

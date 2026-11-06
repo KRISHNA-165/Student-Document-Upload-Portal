@@ -160,12 +160,17 @@ class Database {
     return this.data.notifications.filter(n => n.recipientId === recipientId);
   }
 
+  getNotificationById(id) {
+    return this.data.notifications.find(n => n.id === id) || null;
+  }
+
   markNotificationRead(notificationId, recipientId) {
     const item = this.data.notifications.find(
-      n => n.id === notificationId && n.recipientId === recipientId
+      n => n.id === notificationId && (recipientId ? n.recipientId === recipientId : true)
     );
     if (item) {
       item.read = true;
+      item.readAt = new Date().toISOString();
       this.save();
       return item;
     }
