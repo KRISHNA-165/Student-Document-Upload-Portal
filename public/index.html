@@ -661,21 +661,25 @@
     </div>
   </div>
 
-  <!-- Modal: Replace Document -->
+  <!-- Modal: Replace / Resubmit Document (US03) -->
   <div class="modal hidden" id="replaceModal" role="dialog" aria-modal="true" aria-labelledby="replaceModalTitle">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 id="replaceModalTitle">Replace Document</h3>
+        <h3 id="replaceModalTitle">Replace / Resubmit Document</h3>
         <button type="button" class="modal-close" id="btnCloseReplace">&times;</button>
       </div>
       <form id="replaceForm" novalidate>
         <div class="modal-body">
-          <p class="modal-intro">You can replace the attached document file or update details while the status is <strong>Pending Approval</strong>.</p>
+          <div id="replaceRejectionBanner" class="alert alert-danger" style="display:none; margin-bottom:1rem; border-left: 4px solid #ef4444; background: #fef2f2; padding: 10px 14px; border-radius: 6px;">
+            <strong style="color:#991b1b;">Faculty Rejection Feedback:</strong>
+            <p id="replaceRejectionReason" style="margin: 4px 0 0 0; color:#b91c1c; font-size: 0.875rem;"></p>
+          </div>
+          <p class="modal-intro">Upload a corrected document file and verify metadata to resubmit for Faculty Advisor verification without creating a duplicate record.</p>
           <input type="hidden" id="replaceDocId" name="docId">
 
           <div class="form-group">
             <label for="replaceTitle" class="form-label required">Document Title</label>
-            <input type="text" id="replaceTitle" name="title" class="form-control" required>
+            <input type="text" id="replaceTitle" name="title" class="form-control" required placeholder="Enter document title">
           </div>
 
           <div class="form-group">
@@ -697,19 +701,19 @@
 
           <div class="form-group">
             <label for="replaceOrg" class="form-label required">Issuing Organization</label>
-            <input type="text" id="replaceOrg" name="issuingOrganization" class="form-control" required>
+            <input type="text" id="replaceOrg" name="issuingOrganization" class="form-control" required placeholder="Issuing organization name">
           </div>
 
           <div class="form-group">
-            <label for="replaceFileInput" class="form-label">New Document File (Optional if only updating details)</label>
-            <input type="file" id="replaceFileInput" name="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="replaceFileInput" class="form-label required">Replacement Document File (Required)</label>
+            <input type="file" id="replaceFileInput" name="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
             <small class="field-hint">PDF, JPG, JPEG, or PNG &le; 10 MB.</small>
             <div class="field-feedback" id="replaceFileFeedback"></div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btnCancelReplace">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="btnSubmitReplace">Confirm Replacement</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitReplace">Submit Replacement</button>
         </div>
       </form>
     </div>

@@ -577,13 +577,20 @@ async function loadDocuments() {
     documentsTableBody.innerHTML = docs.map(doc => {
       const uploadTime = new Date(doc.createdAt).toLocaleString();
       const statusClass = doc.status === 'Pending Approval' ? 'status-pending' : (doc.status === 'Approved' ? 'status-approved' : 'status-rejected');
+      const isRejected = doc.status === 'Rejected';
       const isPending = doc.status === 'Pending Approval';
+      const isApproved = doc.status === 'Approved';
 
       return `
         <tr data-id="${doc.id}">
           <td>
             <strong>${escapeHtml(doc.title)}</strong>
             <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(doc.originalFilename)} (${formatBytes(doc.fileSize)})</div>
+            ${isRejected && doc.lastReviewComment ? `
+              <div style="margin-top: 6px; padding: 4px 8px; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; font-size: 0.75rem; color: #991b1b;">
+                <strong>Advisor Feedback:</strong> ${escapeHtml(doc.lastReviewComment)}
+              </div>
+            ` : ''}
           </td>
           <td><span class="badge">${escapeHtml(doc.category)}</span></td>
           <td>${escapeHtml(doc.dateOfAchievement)}</td>
@@ -591,19 +598,21 @@ async function loadDocuments() {
           <td><span class="status-badge ${statusClass}">⏳ ${escapeHtml(doc.status)}</span></td>
           <td>${uploadTime}</td>
           <td>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
               <button class="btn-action" onclick="viewDocument('${doc.id}', '${escapeHtml(doc.title)}', '${doc.mimeType}')" title="Preview document inline">
                 👁️ View
               </button>
               <a href="/api/documents/${doc.id}/download" class="btn-action" download title="Download file">
                 ⬇️ Download
               </a>
-              ${isPending ? `
-                <button class="btn-action" onclick="openReplaceModal('${doc.id}')" title="Replace document or update details">
+              ${isRejected ? `
+                <button class="btn-action btn-replace" onclick="openReplaceModal('${doc.id}')" title="Replace rejected document and resubmit">
                   🔄 Replace
                 </button>
+              ` : isApproved ? `
+                <span style="font-size:0.75rem; color:#10b981; font-weight:500;">✓ Approved</span>
               ` : `
-                <span style="font-size:0.75rem; color:#94a3b8;">Locked</span>
+                <span style="font-size:0.75rem; color:#94a3b8;">Under Review</span>
               `}
             </div>
           </td>
@@ -653,6 +662,24 @@ window.openReplaceModal = async function(id) {
     document.getElementById('replaceFileInput').value = '';
     document.getElementById('replaceFileFeedback').textContent = '';
 
+    // Show faculty rejection feedback banner if available (TC_03, TC_05)
+    const banner = document.getElementById('replaceRejectionBanner');
+    const reasonEl = document.getElementById('replaceRejectionReason');
+    if (banner && reasonEl) {
+      if (doc.lastReviewComment) {
+        reasonEl.textContent = doc.lastReviewComment;
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    const btnSubmit = document.getElementById('btnSubmitReplace');
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Submit Replacement';
+    }
+
     replaceModal.classList.remove('hidden');
   } catch (err) {
     showAlert(err.message, 'danger');
@@ -668,10 +695,43 @@ async function handleReplaceSubmit(e) {
   const dateOfAchievement = document.getElementById('replaceDate').value;
   const issuingOrganization = document.getElementById('replaceOrg').value.trim();
   const fileInputEl = document.getElementById('replaceFileInput');
+  const btnSubmit = document.getElementById('btnSubmitReplace');
 
   if (!title || !category || !dateOfAchievement || !issuingOrganization) {
     showAlert('All required fields must be completed.', 'danger');
     return;
+  }
+
+  // Mandatory file requirement for US03 resubmission (TC_11)
+  if (!fileInputEl.files || !fileInputEl.files[0]) {
+    document.getElementById('replaceFileFeedback').textContent = 'A replacement file is required for resubmission.';
+    showAlert('A replacement file is required for resubmission.', 'danger');
+    return;
+  }
+
+  const file = fileInputEl.files[0];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    document.getElementById('replaceFileFeedback').textContent = 'Invalid file type. Only PDF, JPG, JPEG, and PNG allowed.';
+    showAlert('Invalid file type. Only PDF, JPG, JPEG, and PNG allowed.', 'danger');
+    return;
+  }
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    document.getElementById('replaceFileFeedback').textContent = 'File exceeds 10 MB limit.';
+    showAlert('File exceeds 10 MB limit.', 'danger');
+    return;
+  }
+
+  // Confirmation dialog (TC_25, TC_26)
+  const confirmed = window.confirm('Are you sure you want to resubmit this document? This will replace the file and send it to your Faculty Advisor for review.');
+  if (!confirmed) {
+    return;
+  }
+
+  // Prevent duplicate resubmission on double click (TC_23)
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Submitting replacement...';
   }
 
   const formData = new FormData();
@@ -679,34 +739,26 @@ async function handleReplaceSubmit(e) {
   formData.append('category', category);
   formData.append('dateOfAchievement', dateOfAchievement);
   formData.append('issuingOrganization', issuingOrganization);
-
-  if (fileInputEl.files && fileInputEl.files[0]) {
-    const file = fileInputEl.files[0];
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      document.getElementById('replaceFileFeedback').textContent = 'Invalid file type. Only PDF, JPG, JPEG, and PNG allowed.';
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      document.getElementById('replaceFileFeedback').textContent = 'File exceeds 10 MB limit.';
-      return;
-    }
-    formData.append('file', file);
-  }
+  formData.append('file', file);
 
   try {
-    const res = await fetch(`/api/documents/${docId}/replace`, {
+    const res = await fetch(`/api/documents/${docId}/replacement`, {
       method: 'PUT',
       body: formData
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Replacement failed');
 
-    showAlert('Document successfully replaced and updated.', 'success');
+    showAlert('Replacement document submitted successfully! Status changed to Pending Approval.', 'success');
     replaceModal.classList.add('hidden');
     await refreshAllData();
   } catch (err) {
     showAlert(err.message, 'danger');
+  } finally {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Submit Replacement';
+    }
   }
 }
 

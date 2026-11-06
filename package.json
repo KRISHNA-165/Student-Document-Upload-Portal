@@ -5,9 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test --test-concurrency=1 tests/tc_suite.test.js tests/tc_us02_suite.test.js",
+    "test": "node --test --test-concurrency=1 tests/tc_suite.test.js tests/tc_us02_suite.test.js tests/tc_us03_suite.test.js",
     "test:us01": "node --test tests/tc_suite.test.js",
-    "test:us02": "node --test tests/tc_us02_suite.test.js"
+    "test:us02": "node --test tests/tc_us02_suite.test.js",
+    "test:us03": "node --test tests/tc_us03_suite.test.js"
   },
   "keywords": [],
   "author": "",
