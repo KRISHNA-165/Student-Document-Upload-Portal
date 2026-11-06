@@ -4,6 +4,7 @@ const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
 
 // State
 let currentUser = null;
+let authToken = sessionStorage.getItem('af_token') || null;
 let selectedFile = null;
 let isSubmitting = false;
 let currentView = 'landing'; // 'landing' | 'portal'
@@ -168,34 +169,110 @@ function setupEventListeners() {
     });
   });
 
-  // Signin Form Submit
+  // Signin Form Submit (US06: Validate registered credentials, error message on failure)
   signinForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const userId = signinEmail.value.trim();
-    if (!userId) return;
-    await switchUser(userId);
-    closeSigninModal();
-    showPortalDashboard();
+    const signinAlert = document.getElementById('signinAlert');
+    if (signinAlert) signinAlert.classList.add('hidden');
 
-    // Direct user to relevant tab
-    if (selectedSigninRole === 'Faculty') {
-      switchTab('facultyTab');
-    } else if (selectedSigninRole === 'Admin') {
-      switchTab('auditTab');
-    } else {
-      switchTab('uploadTab');
+    const identifier = signinEmail.value.trim();
+    const password = signinPassword.value.trim();
+
+    if (!identifier || !password) {
+      if (signinAlert) {
+        signinAlert.textContent = 'Please enter both username/email and password';
+        signinAlert.classList.remove('hidden');
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password, role: selectedSigninRole })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (signinAlert) {
+          signinAlert.textContent = data.message || 'Invalid username/email or password';
+          signinAlert.classList.remove('hidden');
+        }
+        return;
+      }
+
+      authToken = data.token;
+      sessionStorage.setItem('af_token', authToken);
+      currentUser = data.user;
+      closeSigninModal();
+      showPortalDashboard();
+      renderCurrentUser();
+
+      // Direct student to Dashboard (TC_01)
+      if (currentUser.role === 'Faculty') {
+        switchTab('facultyTab');
+      } else if (currentUser.role === 'Admin') {
+        switchTab('auditTab');
+      } else {
+        switchTab('dashboardTab');
+      }
+
+      showAlert(`Welcome back, ${currentUser.name}!`, 'success');
+      await refreshAllData();
+    } catch (err) {
+      if (signinAlert) {
+        signinAlert.textContent = 'Network error during sign in. Please try again.';
+        signinAlert.classList.remove('hidden');
+      }
     }
   });
 
-  // Sign Out
-  btnSignOut.addEventListener('click', () => {
+  // Sign Out (US06: Terminate active session)
+  btnSignOut.addEventListener('click', async () => {
+    try {
+      if (authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+      }
+    } catch (err) {
+      console.warn('Logout warning:', err.message);
+    }
+    authToken = null;
+    currentUser = null;
+    sessionStorage.removeItem('af_token');
     showLandingPage();
+    showAlert('You have been logged out securely.', 'info');
   });
 
   // Role dropdown switcher in top header
   roleSelect.addEventListener('change', async (e) => {
     await switchUser(e.target.value);
   });
+
+  // Quick Action buttons on Student Dashboard (TC_16, TC_17, TC_18)
+  const btnQuickUpload = document.getElementById('btnQuickUpload');
+  if (btnQuickUpload) btnQuickUpload.addEventListener('click', () => switchTab('uploadTab'));
+
+  const btnQuickMyDocs = document.getElementById('btnQuickMyDocs');
+  if (btnQuickMyDocs) btnQuickMyDocs.addEventListener('click', () => switchTab('documentsTab'));
+
+  const btnQuickNotifs = document.getElementById('btnQuickNotifs');
+  if (btnQuickNotifs) btnQuickNotifs.addEventListener('click', () => switchTab('notificationsTab'));
+
+  const btnViewAllDocs = document.getElementById('btnViewAllDocs');
+  if (btnViewAllDocs) btnViewAllDocs.addEventListener('click', () => switchTab('documentsTab'));
+
+  const btnEmptyUpload = document.getElementById('btnEmptyUpload');
+  if (btnEmptyUpload) btnEmptyUpload.addEventListener('click', () => switchTab('uploadTab'));
+
+  const btnRefreshDashboard = document.getElementById('btnRefreshDashboard');
+  if (btnRefreshDashboard) btnRefreshDashboard.addEventListener('click', loadStudentDashboard);
+
+  const btnRetryDashboard = document.getElementById('btnRetryDashboard');
+  if (btnRetryDashboard) btnRetryDashboard.addEventListener('click', loadStudentDashboard);
 
   // Tab navigation
   tabButtons.forEach(btn => {
@@ -1206,14 +1283,23 @@ async function loadAuditLogs() {
 // -------------------------------------------------------------
 async function loadCurrentUser() {
   try {
-    const res = await fetch('/api/auth/me');
+    const headers = {};
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const res = await fetch('/api/auth/me', { headers });
     const data = await res.json();
-    if (data.user) {
+    if (res.ok && data.user) {
       currentUser = data.user;
       renderCurrentUser();
+      return true;
+    } else {
+      currentUser = null;
+      authToken = null;
+      sessionStorage.removeItem('af_token');
+      return false;
     }
   } catch (err) {
     console.error('Failed loading user:', err);
+    return false;
   }
 }
 
@@ -1227,8 +1313,12 @@ async function switchUser(userId) {
     const data = await res.json();
     if (data.user) {
       currentUser = data.user;
+      if (data.token) {
+        authToken = data.token;
+        sessionStorage.setItem('af_token', authToken);
+      }
       renderCurrentUser();
-      showAlert(`Switched to: ${currentUser.name} (${currentUser.role})`, 'success');
+      showAlert(`Switched session to: ${currentUser.name} (${currentUser.role})`, 'success');
       await refreshAllData();
     }
   } catch (err) {
@@ -1244,11 +1334,33 @@ function renderCurrentUser() {
   userAvatarEl.textContent = initials;
   roleSelect.value = currentUser.id;
 
+  const tabDashboardBtn = document.getElementById('tabDashboardBtn');
+  const tabFacultyBtn = document.getElementById('tabFacultyBtn');
+  const tabAuditBtn = document.getElementById('tabAuditBtn');
+  const tabUploadBtn = document.getElementById('tabUploadBtn');
+  const tabDocumentsBtn = document.getElementById('tabDocumentsBtn');
+  const tabNotificationsBtn = document.getElementById('tabNotificationsBtn');
+
+  // Role-Based Control & Tab Isolation (TC_38: Verify navigation does not expose another role's controls)
   if (currentUser.role === 'Student') {
     advisorBanner.classList.remove('hidden');
     assignedAdvisorName.textContent = currentUser.assignedFacultyAdvisorName || 'Dr. Robert Smith';
+    if (tabDashboardBtn) tabDashboardBtn.classList.remove('hidden');
+    if (tabUploadBtn) tabUploadBtn.classList.remove('hidden');
+    if (tabDocumentsBtn) tabDocumentsBtn.classList.remove('hidden');
+    if (tabNotificationsBtn) tabNotificationsBtn.classList.remove('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.add('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
+  } else if (currentUser.role === 'Faculty') {
+    advisorBanner.classList.add('hidden');
+    if (tabDashboardBtn) tabDashboardBtn.classList.add('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
   } else {
     advisorBanner.classList.add('hidden');
+    if (tabDashboardBtn) tabDashboardBtn.classList.add('hidden');
+    if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
+    if (tabAuditBtn) tabAuditBtn.classList.remove('hidden');
   }
 }
 
@@ -1265,6 +1377,7 @@ function switchTab(tabId) {
     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
+  if (tabId === 'dashboardTab') loadStudentDashboard();
   if (tabId === 'documentsTab') loadDocuments();
   if (tabId === 'notificationsTab') loadStudentNotifications();
   if (tabId === 'facultyTab') loadFacultyData();
@@ -1272,7 +1385,155 @@ function switchTab(tabId) {
 }
 
 async function refreshAllData() {
-  await Promise.all([loadDocuments(), loadStudentNotifications(), loadFacultyData(), loadAuditLogs()]);
+  await Promise.all([
+    loadStudentDashboard(),
+    loadDocuments(),
+    loadStudentNotifications(),
+    loadFacultyData(),
+    loadAuditLogs()
+  ]);
+}
+
+// -------------------------------------------------------------
+// Student Dashboard Operations (US06 & TC_01 - TC_40)
+// -------------------------------------------------------------
+async function loadStudentDashboard() {
+  const loadingEl = document.getElementById('dashboardLoading');
+  const errorEl = document.getElementById('dashboardError');
+  const errorMsgEl = document.getElementById('dashboardErrorMessage');
+  const emptyStateEl = document.getElementById('dashEmptyState');
+  const recentListEl = document.getElementById('dashRecentUploadsList');
+  const greetingEl = document.getElementById('dashStudentName');
+
+  const totalEl = document.getElementById('dashTotalDocs');
+  const pendingEl = document.getElementById('dashPendingDocs');
+  const approvedEl = document.getElementById('dashApprovedDocs');
+  const rejectedEl = document.getElementById('dashRejectedDocs');
+  const notifBadgeEl = document.getElementById('dashNotifBadge');
+
+  if (!recentListEl) return;
+
+  // Show loading state (TC_24)
+  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+
+  try {
+    const headers = { 'Accept': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    else if (currentUser) headers['x-user-id'] = currentUser.id;
+
+    const res = await fetch('/api/student/dashboard', { headers });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 401 && (data.code === 'SESSION_EXPIRED' || data.message.includes('expired'))) {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        showLandingPage();
+        showAlert('Session expired due to inactivity. Please log in again.', 'danger');
+        openSigninModal('Student');
+        return;
+      }
+      throw new Error(data.message || 'Failed to load dashboard data');
+    }
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+
+    // Personalized welcome greeting (TC_02)
+    if (greetingEl) {
+      greetingEl.textContent = (data.student && data.student.name) || (currentUser && currentUser.name) || 'Student';
+    }
+
+    // Dashboard Statistics (TC_03, TC_04, TC_05, TC_06, TC_07, TC_27, TC_29)
+    if (totalEl) totalEl.textContent = data.counts.total;
+    if (pendingEl) pendingEl.textContent = data.counts.pending;
+    if (approvedEl) approvedEl.textContent = data.counts.approved;
+    if (rejectedEl) rejectedEl.textContent = data.counts.rejected;
+    if (notifBadgeEl) notifBadgeEl.textContent = data.unreadNotificationCount;
+
+    // Recent Uploads Rendering (TC_08, TC_09, TC_10, TC_11, TC_12, TC_30, TC_31)
+    const uploads = data.recentUploads || [];
+    if (uploads.length === 0) {
+      // Empty state for student with no uploads (TC_08)
+      if (emptyStateEl) emptyStateEl.classList.remove('hidden');
+      recentListEl.innerHTML = '';
+    } else {
+      if (emptyStateEl) emptyStateEl.classList.add('hidden');
+      recentListEl.innerHTML = `
+        <table class="recent-table" aria-label="Recent Uploads">
+          <thead>
+            <tr>
+              <th scope="col">Document Title</th>
+              <th scope="col">Category</th>
+              <th scope="col">Upload Date</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${uploads.map(doc => {
+              let badgeClass = 'badge-pending';
+              let icon = '⏳';
+              if (doc.status === 'Approved') {
+                badgeClass = 'badge-approved';
+                icon = '✅';
+              } else if (doc.status === 'Rejected') {
+                badgeClass = 'badge-rejected';
+                icon = '❌';
+              }
+              const safeTitle = escapeHtml(doc.title);
+              const safeOrg = escapeHtml(doc.issuingOrganization || '');
+              const safeCategory = escapeHtml(doc.category || '');
+              const displayDate = doc.formattedDate || (doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A');
+
+              return `
+                <tr class="recent-row" tabindex="0" role="button" aria-label="View details for ${safeTitle}" data-doc-id="${doc.id}">
+                  <td class="recent-title-cell">
+                    <span class="recent-title-text" title="${safeTitle}">${safeTitle}</span>
+                    <span class="recent-org-sub">${safeOrg}</span>
+                  </td>
+                  <td><span class="badge badge-light">${safeCategory}</span></td>
+                  <td>${displayDate}</td>
+                  <td>
+                    <span class="badge-status ${badgeClass}" aria-label="Status: ${doc.status}">
+                      <span>${icon}</span>
+                      <span>${doc.status}</span>
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <button type="button" class="af-btn af-btn-outline btn-sm btn-recent-preview" data-id="${doc.id}" aria-label="Preview document ${safeTitle}">
+                      👁️ View
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Attach row and preview click handlers (TC_30, TC_34)
+      recentListEl.querySelectorAll('.recent-row, .btn-recent-preview').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const docId = el.dataset.docId || el.dataset.id;
+          if (docId) openDocumentPreview(docId);
+        });
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const docId = el.dataset.docId || el.dataset.id;
+            if (docId) openDocumentPreview(docId);
+          }
+        });
+      });
+    }
+  } catch (err) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsgEl) errorMsgEl.textContent = err.message || 'Failed to load dashboard data';
+    }
+  }
 }
 
 // -------------------------------------------------------------

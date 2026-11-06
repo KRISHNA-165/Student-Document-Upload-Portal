@@ -334,6 +334,8 @@
           <a href="#forgot" class="forgot-link">Forgot password?</a>
         </div>
 
+        <div id="signinAlert" class="alert alert-danger hidden" role="alert"></div>
+
         <button type="submit" class="af-btn af-btn-dark af-btn-block btn-signin-submit">
           Sign in &nbsp;&rarr;
         </button>
@@ -356,7 +358,10 @@
 
       <!-- Main Navigation Tabs -->
       <nav class="nav-tabs" role="tablist">
-        <button class="tab-button active" id="tabUploadBtn" data-tab="uploadTab" role="tab" aria-selected="true">
+        <button class="tab-button active" id="tabDashboardBtn" data-tab="dashboardTab" role="tab" aria-selected="true">
+          📊 Dashboard
+        </button>
+        <button class="tab-button" id="tabUploadBtn" data-tab="uploadTab" role="tab" aria-selected="false">
           📤 Upload Document
         </button>
         <button class="tab-button" id="tabDocumentsBtn" data-tab="documentsTab" role="tab" aria-selected="false">
@@ -376,8 +381,101 @@
       <!-- Global Alerts -->
       <div id="alertContainer" class="alert-container"></div>
 
+      <!-- ================= TAB 0: STUDENT DASHBOARD (US06) ================= -->
+      <section id="dashboardTab" class="tab-panel active" role="tabpanel" aria-labelledby="tabDashboardBtn">
+        <!-- Personalized Welcome Banner -->
+        <div class="dashboard-hero card">
+          <div class="dash-welcome-row">
+            <div>
+              <h1 class="dash-greeting" id="dashGreeting">Hi, <span id="dashStudentName">Alex Rivera</span></h1>
+              <p class="dash-sub">Here is what's happening with your academic documents today.</p>
+            </div>
+            <div class="dash-hero-actions">
+              <button type="button" class="af-btn af-btn-outline btn-sm" id="btnRefreshDashboard" aria-label="Refresh Dashboard">
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Loading Indicator (TC_24) -->
+        <div id="dashboardLoading" class="loading-state hidden" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <p>Loading your academic documents overview...</p>
+        </div>
+
+        <!-- Dashboard Error Alert with Retry Option (TC_25, TC_26) -->
+        <div id="dashboardError" class="alert alert-danger hidden" role="alert">
+          <span id="dashboardErrorMessage">Failed to load dashboard data.</span>
+          <button type="button" class="af-btn af-btn-outline btn-sm ml-2" id="btnRetryDashboard">Retry</button>
+        </div>
+
+        <!-- 4 Metric Cards (TC_03, TC_04, TC_05, TC_06, TC_27, TC_29) -->
+        <div class="dash-metrics-grid" id="dashMetricsGrid">
+          <div class="metric-card" id="cardTotalDocs">
+            <div class="metric-label">Total Documents</div>
+            <div class="metric-value" id="dashTotalDocs">0</div>
+            <div class="metric-desc">All submitted academic records</div>
+          </div>
+          <div class="metric-card metric-pending" id="cardPendingDocs">
+            <div class="metric-label">Pending Approval</div>
+            <div class="metric-value" id="dashPendingDocs">0</div>
+            <div class="metric-desc">Awaiting faculty advisor review</div>
+          </div>
+          <div class="metric-card metric-approved" id="cardApprovedDocs">
+            <div class="metric-label">Approved</div>
+            <div class="metric-value" id="dashApprovedDocs">0</div>
+            <div class="metric-desc">Verified and authentic records</div>
+          </div>
+          <div class="metric-card metric-rejected" id="cardRejectedDocs">
+            <div class="metric-label">Action Required / Rejected</div>
+            <div class="metric-value" id="dashRejectedDocs">0</div>
+            <div class="metric-desc">Eligible for document replacement</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Bar (TC_16, TC_17, TC_18, TC_19) -->
+        <div class="dash-quick-actions-bar card">
+          <div class="quick-actions-title">Quick Actions</div>
+          <div class="quick-actions-buttons">
+            <button type="button" class="af-btn af-btn-dark" id="btnQuickUpload" aria-label="Upload Document">
+              📤 Upload Document
+            </button>
+            <button type="button" class="af-btn af-btn-outline" id="btnQuickMyDocs" aria-label="My Documents">
+              📂 My Documents
+            </button>
+            <button type="button" class="af-btn af-btn-outline" id="btnQuickNotifs" aria-label="Notifications">
+              🔔 Notifications <span class="badge badge-primary ml-1" id="dashNotifBadge">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Uploads Section (TC_09, TC_10, TC_11, TC_12, TC_30, TC_31) -->
+        <div class="card dash-recent-card">
+          <div class="card-header flex-between">
+            <div>
+              <h2>Recent Uploads</h2>
+              <p class="section-desc">Your latest document submissions and verification status.</p>
+            </div>
+            <button type="button" class="af-btn af-btn-link" id="btnViewAllDocs">View all in My Documents &rarr;</button>
+          </div>
+
+          <div id="dashRecentUploadsList" class="recent-uploads-container">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Empty State (TC_08) -->
+          <div id="dashEmptyState" class="empty-state hidden">
+            <div class="empty-state-icon">📄</div>
+            <h3>No documents uploaded yet</h3>
+            <p>Upload your first achievement certificate or internship record to get started with Faculty Advisor verification.</p>
+            <button type="button" class="af-btn af-btn-dark mt-3" id="btnEmptyUpload">📤 Upload Document</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ================= TAB 1: UPLOAD DOCUMENT ================= -->
-      <section id="uploadTab" class="tab-panel active" role="tabpanel">
+      <section id="uploadTab" class="tab-panel" role="tabpanel">
         <div class="card upload-card">
           <div class="card-header">
             <h2>Upload Achievement or Internship Document</h2>

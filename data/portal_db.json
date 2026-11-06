@@ -8,26 +8,61 @@
       "semester": "6th Semester",
       "assignedFacultyAdvisorId": "FAC-101",
       "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "username": "johndoe",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
       "role": "Student"
     },
     {
       "id": "STU-2024-002",
       "name": "Jane Smith",
+      "username": "janesmith",
       "email": "jane.smith@university.edu",
       "department": "Information Technology",
       "semester": "6th Semester",
       "assignedFacultyAdvisorId": "FAC-101",
       "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
       "role": "Student"
     },
     {
       "id": "STU-2024-003",
-      "name": "Alex Rivers",
+      "name": "Alex Rivera",
+      "username": "alexrivera",
       "email": "alex.rivers@university.edu",
       "department": "Electronics & Communication",
       "semester": "4th Semester",
       "assignedFacultyAdvisorId": "FAC-102",
       "assignedFacultyAdvisorName": "Dr. Emily Davis",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
+      "role": "Student"
+    },
+    {
+      "id": "STU-2024-004",
+      "name": "Arun Kumar",
+      "username": "arunkumar",
+      "email": "arun.kumar@university.edu",
+      "department": "Computer Science & Engineering",
+      "semester": "5th Semester",
+      "assignedFacultyAdvisorId": "FAC-101",
+      "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
+      "role": "Student"
+    },
+    {
+      "id": "STU-2024-005",
+      "name": "Priya Sharma",
+      "username": "priyasharma",
+      "email": "priya.sharma@university.edu",
+      "department": "Information Technology",
+      "semester": "2nd Semester",
+      "assignedFacultyAdvisorId": "FAC-101",
+      "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
       "role": "Student"
     },
     {
@@ -35,25 +70,35 @@
       "name": "Dr. Robert Smith",
       "email": "robert.smith@university.edu",
       "department": "Computer Science & Engineering",
-      "role": "Faculty"
+      "role": "Faculty",
+      "username": "robertsmith",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817"
     },
     {
       "id": "FAC-102",
       "name": "Dr. Emily Davis",
+      "username": "emilydavis",
       "email": "emily.davis@university.edu",
       "department": "Electronics & Communication",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
       "role": "Faculty"
     },
     {
       "id": "ADM-001",
       "name": "System Administrator",
+      "username": "admin",
       "email": "admin@university.edu",
       "department": "Central Administration",
+      "passwordSalt": "a1b2c3d4e5f67890",
+      "passwordHash": "601b13857f0d806535f688dbfb8c92ca61b25eb8b6091c6b3fc3d578d11574140d7cef5e38b6f9fa00d196b50728d7097a38d5b317712e5a9dbf6e8dee744817",
       "role": "Admin"
     }
   ],
   "documents": [],
   "notifications": [],
   "auditLogs": [],
-  "reviewHistory": []
+  "reviewHistory": [],
+  "sessions": []
 }

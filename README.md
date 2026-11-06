@@ -7,6 +7,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US03**: Replace Rejected Document
 - **User Story US04**: Faculty Submission and Resubmission Notifications & Student Document Tracking
 - **User Story US05**: Document Review History & Student Notifications
+- **User Story US06**: Secure Student Login & Student Dashboard
 
 ---
 
@@ -104,7 +105,24 @@ The application faithfully implements the Figma design specifications:
 
 ---
 
-## 🧪 Comprehensive Automated Test Suites (207/207 Tests Passing)
+## 📋 US06 Acceptance Criteria Verification (Secure Student Login & Student Dashboard)
+
+| Requirement | Implementation Details | Status |
+|---|---|:---:|
+| **Registered Credentials Login** | Student can authenticate via `POST /api/auth/login` using registered username, email, or student registration ID with password. | ✅ Passed |
+| **Credential Validation** | Username/email and password required fields are validated; empty or whitespace input is rejected with 400. | ✅ Passed |
+| **Safe Error on Invalid Credentials** | Returns generic, timing-safe message (`"Invalid username/email or password"`) with 401 without exposing field existence. | ✅ Passed |
+| **Access Control & Dashboard Guard** | Unauthenticated requests to `/api/student/dashboard` are blocked with 401; protected backend boundary. | ✅ Passed |
+| **Dashboard Redirection** | Successful login establishes an authenticated session and redirects the student to the Student Dashboard view. | ✅ Passed |
+| **Strict Document Isolation** | Student can only access their own documents, statistics, and notifications (foreign access rejected with 403). | ✅ Passed |
+| **Session Inactivity Timeout** | Sessions automatically expire after inactivity period; expired requests return 401 `SESSION_EXPIRED`. | ✅ Passed |
+| **Session Termination on Logout** | Calling `POST /api/auth/logout` invalidates the active session token in the database and terminates authentication. | ✅ Passed |
+| **Student Dashboard Metrics** | Reconciled summary counts for Total, Pending, Approved, and Rejected documents without double-counting. | ✅ Passed |
+| **Recent Uploads & Distinguishable Status** | Displays latest uploads ordered newest first with distinguishable textual + icon status badges and detail view. | ✅ Passed |
+
+---
+
+## 🧪 Comprehensive Automated Test Suites (252/252 Tests Passing)
 
 ### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
 - **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
@@ -288,15 +306,63 @@ The application faithfully implements the Figma design specifications:
   - `US05_A03`: Student can view review history via `/api/student/documents/:id/review-history`
   - `US05_A04`: Deny review history access to unauthorized students
 
+### 6. US06 Specification Suite (`tests/tc_us06_suite.test.js`)
+- **45/45 Tests Passing**:
+  - `TC_01`: Verify student dashboard opens
+  - `TC_02`: Verify personalized welcome message
+  - `TC_03`: Verify dashboard displays total document count
+  - `TC_04`: Verify pending document count
+  - `TC_05`: Verify approved document count
+  - `TC_06`: Verify rejected document count
+  - `TC_07`: Verify counts reconcile with document list
+  - `TC_08`: Verify dashboard for a student with no documents
+  - `TC_09`: Verify recent uploads section
+  - `TC_10`: Verify recent uploads are ordered newest first
+  - `TC_11`: Verify recent upload title and category
+  - `TC_12`: Verify recent upload status is accurate
+  - `TC_13`: Verify dashboard refresh after new upload
+  - `TC_14`: Verify dashboard updates after approval
+  - `TC_15`: Verify dashboard updates after rejection
+  - `TC_16`: Verify Upload Document quick action
+  - `TC_17`: Verify My Documents quick action
+  - `TC_18`: Verify notification shortcut
+  - `TC_19`: Verify unread notification count
+  - `TC_20`: Verify dashboard only shows signed-in student's data
+  - `TC_21`: Verify dashboard data isolation after switching accounts
+  - `TC_22`: Verify unauthenticated dashboard access is blocked
+  - `TC_23`: Verify dashboard data persists after refresh
+  - `TC_24`: Verify dashboard loading state
+  - `TC_25`: Verify dashboard data-load failure message
+  - `TC_26`: Verify retry after dashboard load failure
+  - `TC_27`: Verify dashboard cards have meaningful labels
+  - `TC_28`: Verify status indicators are distinguishable
+  - `TC_29`: Verify statistics do not double-count documents
+  - `TC_30`: Verify recently uploaded document opens details
+  - `TC_31`: Verify long document title layout
+  - `TC_32`: Verify dashboard layout on mobile viewport
+  - `TC_33`: Verify dashboard layout on tablet viewport
+  - `TC_34`: Verify dashboard keyboard navigation
+  - `TC_35`: Verify accessible names for dashboard controls
+  - `TC_36`: Verify dashboard date formatting
+  - `TC_37`: Verify dashboard handles a large document history
+  - `TC_38`: Verify dashboard navigation does not expose another role's controls
+  - `TC_39`: Verify dashboard handles session expiration
+  - `TC_40`: Verify dashboard totals after document deletion or removal
+  - `US06_A01`: Student can log in using registered credentials
+  - `US06_A02`: Missing credentials return validation error
+  - `US06_A03`: Invalid credentials display safe error message
+  - `US06_A04`: Logout terminates active session
+  - `US06_A05`: Student cannot delete another student's document
+
 ```
-ℹ tests 207 | suites 5 | pass 207 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 252 | suites 6 | pass 252 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 207 Tests
+### Run All 252 Tests
 ```bash
 npm test
 ```
@@ -308,6 +374,7 @@ npm run test:us02    # Runs 40 tests for US02
 npm run test:us03    # Runs 40 tests for US03
 npm run test:us04    # Runs 43 tests for US04
 npm run test:us05    # Runs 44 tests for US05
+npm run test:us06    # Runs 45 tests for US06
 ```
 
 ### Start Server
