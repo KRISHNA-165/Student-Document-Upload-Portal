@@ -630,27 +630,100 @@
             <span class="badge" style="background:#fef2f2; color:#b91c1c; padding:6px 12px; border-radius:6px; font-weight:600;">Rejected: <strong id="summaryRejected">0</strong></span>
           </div>
 
-          <!-- Search & Filter Controls (TC_12 - TC_22) -->
-          <div class="student-filters-bar" style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
-            <div style="flex:1; min-width:200px;">
-              <input type="text" id="studentSearchInput" class="form-control" placeholder="🔍 Search document title (exact or partial)...">
+          <!-- Search & Filter Controls (US08: TC_01 - TC_40) -->
+          <div class="student-filters-bar" style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+            <div style="flex:2; min-width:220px;">
+              <input
+                type="text"
+                id="studentSearchInput"
+                class="form-control"
+                placeholder="🔍 Search title, category, or organization..."
+                aria-label="Search documents by title, category, or issuing organization"
+              >
             </div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <select id="studentStatusFilter" class="form-control" style="width:auto;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; flex:3; align-items:center;">
+              <select id="studentCategoryFilter" class="form-control" style="width:auto; min-width:140px;" aria-label="Filter documents by category">
+                <option value="All">All Categories</option>
+                <option value="Achievement">Achievement</option>
+                <option value="Internship">Internship</option>
+                <option value="Participation Certificate">Participation Certificate</option>
+                <option value="Academic Record">Academic Record</option>
+                <option value="Certification">Certification</option>
+                <option value="Other">Other</option>
+              </select>
+              <select id="studentStatusFilter" class="form-control" style="width:auto; min-width:130px;" aria-label="Filter documents by status">
                 <option value="All">All Statuses</option>
                 <option value="Pending Approval">Pending Approval</option>
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
               </select>
-              <select id="studentSortFilter" class="form-control" style="width:auto;">
+              <input
+                type="date"
+                id="studentStartDate"
+                class="form-control"
+                style="width:auto;"
+                aria-label="Start upload date"
+                title="From Date"
+              >
+              <input
+                type="date"
+                id="studentEndDate"
+                class="form-control"
+                style="width:auto;"
+                aria-label="End upload date"
+                title="To Date"
+              >
+              <select id="studentSortFilter" class="form-control" style="width:auto; min-width:130px;" aria-label="Sort documents">
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
+                <option value="title_asc">Title (A-Z)</option>
+                <option value="title_desc">Title (Z-A)</option>
+                <option value="status">Status</option>
               </select>
-              <button class="btn btn-secondary btn-sm" id="btnClearStudentFilters">Clear</button>
+              <button class="btn btn-secondary btn-sm" id="btnClearStudentFilters" title="Reset all search and filter fields">Reset</button>
             </div>
           </div>
 
-          <div class="documents-table-wrapper">
+          <!-- Date Range Error Alert (TC_15) -->
+          <div id="studentDateError" class="alert alert-danger hidden" role="alert" style="margin-bottom:12px;">
+            ⚠️ Start date cannot be later than end date. Please adjust your date range.
+          </div>
+
+          <!-- Search Loading Indicator (TC_33) -->
+          <div id="studentSearchLoading" class="loading-state hidden" role="status" aria-live="polite" style="padding:16px;">
+            <div class="spinner"></div>
+            <p>Searching documents...</p>
+          </div>
+
+          <!-- Search Error with Retry (TC_34, TC_35) -->
+          <div id="studentSearchError" class="alert alert-danger hidden" role="alert" style="margin-bottom:12px;">
+            <span id="studentSearchErrorMessage">Failed to load documents.</span>
+            <button type="button" class="btn btn-outline-danger btn-sm ml-2" id="btnRetryStudentSearch">Retry</button>
+          </div>
+
+          <!-- Results Summary Bar (TC_17) -->
+          <div class="results-summary-bar" id="studentResultsSummary" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.85rem; color:#64748b;">
+            <span>Showing <strong id="studentVisibleCount">0</strong> of <strong id="studentTotalCount">0</strong> documents</span>
+            <span id="studentActiveFiltersBadge" class="badge hidden" style="background:#e0f2fe; color:#0369a1;">Filters Active</span>
+          </div>
+
+          <!-- Empty Documents List State (TC_32) -->
+          <div id="studentEmptyDocsState" class="empty-state hidden" style="padding:40px 20px; text-align:center;">
+            <div class="empty-state-icon" style="font-size:2.5rem; margin-bottom:8px;">📄</div>
+            <h3>No documents uploaded yet</h3>
+            <p style="color:#64748b; max-width:440px; margin:0 auto 16px;">Upload your first achievement certificate or internship record to get started with Faculty Advisor verification.</p>
+            <button type="button" class="af-btn af-btn-dark" id="btnEmptyUploadDocs">📤 Upload Document</button>
+          </div>
+
+          <!-- No Matching Results State (TC_07, TC_29) -->
+          <div id="studentNoResultsState" class="empty-state hidden" style="padding:40px 20px; text-align:center;">
+            <div class="empty-state-icon" style="font-size:2.5rem; margin-bottom:8px;">🔍</div>
+            <h3>No matching documents found</h3>
+            <p style="color:#64748b; max-width:440px; margin:0 auto 16px;">No records match your active search terms or filter criteria. Try broadening your query or clearing filters.</p>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnResetNoResults">Clear All Filters</button>
+          </div>
+
+          <div class="documents-table-wrapper" id="studentTableWrapper">
             <table class="documents-table" id="documentsTable">
               <thead>
                 <tr>
@@ -669,6 +742,13 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination Bar (TC_27, TC_28, TC_40) -->
+          <div class="pagination-bar" id="studentPagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnStudentPrevPage" disabled>&larr; Previous</button>
+            <span id="studentPageInfo" style="font-size:0.85rem; color:#64748b;">Page 1 of 1</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnStudentNextPage" disabled>Next &rarr;</button>
           </div>
         </div>
       </section>
@@ -721,13 +801,22 @@
           </div>
 
           <div class="faculty-sections">
-            <!-- Filter & Search Controls -->
+            <!-- Filter & Search Controls (US08) -->
             <div class="faculty-filters-bar">
               <div class="filter-group-search">
-                <input type="text" id="facultySearchInput" class="form-control" placeholder="🔍 Search student name, ID, or title...">
+                <input
+                  type="text"
+                  id="facultySearchInput"
+                  class="form-control"
+                  placeholder="🔍 Search student name, ID, or title..."
+                  aria-label="Search student name, ID, or title"
+                >
               </div>
               <div class="filter-group-controls">
-                <select id="facultyCategoryFilter" class="form-control form-select-sm">
+                <select id="facultyStudentFilter" class="form-control form-select-sm" aria-label="Filter by assigned student">
+                  <option value="ALL">All Assigned Students</option>
+                </select>
+                <select id="facultyCategoryFilter" class="form-control form-select-sm" aria-label="Filter by category">
                   <option value="ALL">All Categories</option>
                   <option value="Achievement">Achievement</option>
                   <option value="Internship">Internship</option>
@@ -736,16 +825,45 @@
                   <option value="Certification">Certification</option>
                   <option value="Other">Other</option>
                 </select>
-                <select id="facultyStatusFilter" class="form-control form-select-sm">
+                <select id="facultyStatusFilter" class="form-control form-select-sm" aria-label="Filter by status">
+                  <option value="ALL">All Statuses</option>
                   <option value="Pending Approval">Pending Approval Only</option>
                   <option value="Approved">Approved</option>
                   <option value="Rejected">Rejected</option>
-                  <option value="ALL">All Statuses</option>
                 </select>
-                <input type="date" id="facultyStartDate" class="form-control form-select-sm" title="Start upload date">
-                <input type="date" id="facultyEndDate" class="form-control form-select-sm" title="End upload date">
+                <input
+                  type="date"
+                  id="facultyStartDate"
+                  class="form-control form-select-sm"
+                  aria-label="Start upload date"
+                  title="Start upload date"
+                >
+                <input
+                  type="date"
+                  id="facultyEndDate"
+                  class="form-control form-select-sm"
+                  aria-label="End upload date"
+                  title="End upload date"
+                >
+                <select id="facultySortFilter" class="form-control form-select-sm" aria-label="Sort submissions">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title_asc">Title (A-Z)</option>
+                  <option value="title_desc">Title (Z-A)</option>
+                  <option value="status">Status</option>
+                </select>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnClearFacultyFilters">Clear Filters</button>
               </div>
+            </div>
+
+            <!-- Date Range Error Alert (TC_15) -->
+            <div id="facultyDateError" class="alert alert-danger hidden" role="alert" style="margin-top:8px;">
+              ⚠️ Start date cannot be later than end date. Please adjust your date range.
+            </div>
+
+            <!-- Results Summary Bar -->
+            <div id="facultyResultsSummary" class="results-summary-bar" style="display:flex; justify-content:space-between; align-items:center; margin:8px 0; font-size:0.85rem; color:#64748b;">
+              <span>Showing <strong id="facultyVisibleCount">0</strong> of <strong id="facultyTotalCount">0</strong> submissions</span>
             </div>
 
             <div class="subsection">

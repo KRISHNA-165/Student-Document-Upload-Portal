@@ -655,3 +655,4 @@ describe('US07 - Admin User and Faculty Management (TC_01 to TC_40)', () => {
     assert.equal(assignmentLog.details.newAdvisor.id, 'FAC-102');
   });
 });
+

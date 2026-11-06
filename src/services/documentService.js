@@ -119,41 +119,108 @@ class DocumentService {
    * Retrieve documents for a student with filtering, searching, sorting, and pagination
    */
   getDocumentsForStudent(studentId, options = {}) {
+    // 1. Validate date range if provided (TC_15)
+    const from = options.from || options.startDate;
+    const to = options.to || options.endDate;
+    if (from && to) {
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime()) && fromDate > toDate) {
+        const err = new Error('Start date cannot be later than end date');
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
     let docs = db.getDocuments({ studentId });
 
-    // Filter by status (TC_12, TC_13, TC_14, TC_15)
+    // 2. Filter by status (TC_09, TC_10, TC_11, TC_12)
     if (options.status && options.status !== 'all' && options.status !== 'All') {
       const targetStatus = options.status.trim().toLowerCase();
       docs = docs.filter(d => d.status && d.status.toLowerCase() === targetStatus);
     }
 
-    // Filter by category
+    // 3. Filter by category (TC_13)
     if (options.category && options.category !== 'all' && options.category !== 'All') {
       const targetCategory = options.category.trim().toLowerCase();
       docs = docs.filter(d => d.category && d.category.toLowerCase() === targetCategory);
     }
 
-    // Search by title (TC_16, TC_17, TC_18, TC_19, TC_20)
+    // 4. Search by title, issuing organization, and category (TC_02 - TC_06, TC_22 - TC_24)
     if (options.search !== undefined && options.search !== null) {
       const query = String(options.search).trim().toLowerCase();
       if (query.length > 0) {
-        docs = docs.filter(d => d.title && d.title.toLowerCase().includes(query));
+        docs = docs.filter(d => {
+          const titleMatch = d.title && d.title.toLowerCase().includes(query);
+          const orgMatch = d.issuingOrganization && d.issuingOrganization.toLowerCase().includes(query);
+          const catMatch = d.category && (d.category.toLowerCase() === query || d.category.toLowerCase().includes(query) && !d.title);
+          return Boolean(titleMatch || orgMatch || catMatch);
+        });
       }
     }
 
-    // Sorting (TC_21, TC_22)
-    const sortBy = (options.sort || options.sortBy || 'newest').toLowerCase();
-    const sortOrder = (options.sortOrder || (sortBy === 'oldest' ? 'asc' : 'desc')).toLowerCase();
-    docs.sort((a, b) => {
-      const timeA = new Date(a.createdAt || a.submissionDate || 0).getTime();
-      const timeB = new Date(b.createdAt || b.submissionDate || 0).getTime();
-      if (timeA !== timeB) {
-        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    // 5. Filter by Date Range (TC_14)
+    if (from) {
+      const start = new Date(from);
+      if (!isNaN(start.getTime())) {
+        start.setHours(0, 0, 0, 0);
+        docs = docs.filter(d => {
+          const docDate = new Date(d.createdAt || d.submissionDate || d.dateOfAchievement);
+          return docDate >= start;
+        });
       }
-      return sortOrder === 'asc' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
-    });
+    }
+    if (to) {
+      const end = new Date(to);
+      if (!isNaN(end.getTime())) {
+        end.setHours(23, 59, 59, 999);
+        docs = docs.filter(d => {
+          const docDate = new Date(d.createdAt || d.submissionDate || d.dateOfAchievement);
+          return docDate <= end;
+        });
+      }
+    }
 
-    // Summary counts for student dashboard (TC_27)
+    // 6. Sorting (TC_18 - TC_21)
+    const sortBy = (options.sort || options.sortBy || 'newest').toLowerCase();
+    const defaultOrder = (sortBy === 'oldest' || sortBy === 'title_asc' || sortBy === 'title' || sortBy === 'status') ? 'asc' : 'desc';
+    const sortOrder = (options.sortOrder || defaultOrder).toLowerCase();
+
+    if (sortBy === 'title' || sortBy === 'title_asc' || sortBy === 'title_desc') {
+      const isDesc = sortBy === 'title_desc' || (sortBy !== 'title_asc' && sortBy !== 'title' && sortOrder === 'desc') || (options.sortOrder === 'desc');
+      docs.sort((a, b) => {
+        const res = (a.title || '').localeCompare(b.title || '');
+        return isDesc ? -res : res;
+      });
+    } else if (sortBy === 'status') {
+      const statusRank = {
+        'pending approval': 1,
+        'pending': 1,
+        'approved': 2,
+        'rejected': 3
+      };
+      const isDesc = options.sortOrder === 'desc';
+      docs.sort((a, b) => {
+        const rankA = statusRank[(a.status || '').toLowerCase()] || 99;
+        const rankB = statusRank[(b.status || '').toLowerCase()] || 99;
+        if (rankA !== rankB) {
+          return isDesc ? rankB - rankA : rankA - rankB;
+        }
+        return (a.title || '').localeCompare(b.title || '');
+      });
+    } else {
+      // Default: date sorting (newest / oldest)
+      docs.sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.submissionDate || 0).getTime();
+        const timeB = new Date(b.createdAt || b.submissionDate || 0).getTime();
+        if (timeA !== timeB) {
+          return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+        }
+        return sortOrder === 'asc' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+      });
+    }
+
+    // 7. Summary counts for student dashboard (TC_17)
     const allStudentDocs = db.getDocuments({ studentId });
     const summary = {
       total: allStudentDocs.length,
@@ -164,18 +231,22 @@ class DocumentService {
 
     const totalCount = docs.length;
 
-    // Pagination (TC_39)
+    // 8. Pagination (TC_27, TC_28, TC_40)
+    const page = Math.max(1, parseInt(options.page, 10) || 1);
+    const limit = Math.max(1, parseInt(options.limit, 10) || 10);
     let paginatedDocs = docs;
     if (options.page !== undefined || options.limit !== undefined) {
-      const page = Math.max(1, parseInt(options.page, 10) || 1);
-      const limit = Math.max(1, parseInt(options.limit, 10) || 10);
       const start = (page - 1) * limit;
       paginatedDocs = docs.slice(start, start + limit);
     }
+    const totalPages = limit > 0 ? Math.ceil(totalCount / limit) : 1;
 
     const returnArr = [...paginatedDocs];
     returnArr.documents = paginatedDocs;
     returnArr.total = totalCount;
+    returnArr.page = page;
+    returnArr.limit = limit;
+    returnArr.totalPages = totalPages;
     returnArr.summary = summary;
 
     return returnArr;

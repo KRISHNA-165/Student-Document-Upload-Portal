@@ -9,6 +9,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US05**: Document Review History & Student Notifications
 - **User Story US06**: Secure Student Login & Student Dashboard
 - **User Story US07**: Admin User and Faculty Management
+- **User Story US08**: Document Search and Filtering
 
 ---
 
@@ -417,15 +418,64 @@ The application faithfully implements the Figma design specifications:
   - `US07_A03`: System maintains student and assigned Faculty Advisor relationship
   - `US07_A04`: Changes to user assignments are recorded in audit logs
 
+### 8. User Story US08 — Document Search and Filtering (44 Tests)
+- **Suite**: `tests/tc_us08_suite.test.js`
+- **Total Tests**: 44 passing tests (100% pass)
+- **Coverage**:
+  - `TC_01`: Verify document list opens
+  - `TC_02`: Verify search by document title
+  - `TC_03`: Verify search by partial title
+  - `TC_04`: Verify search is case-insensitive
+  - `TC_05`: Verify search by issuing organization
+  - `TC_06`: Verify search by category
+  - `TC_07`: Verify search with no matches returns empty result
+  - `TC_08`: Verify clearing search restores full record list
+  - `TC_09`: Verify filter by Pending status
+  - `TC_10`: Verify filter by Approved status
+  - `TC_11`: Verify filter by Rejected status
+  - `TC_12`: Verify combining search and status filter
+  - `TC_13`: Verify category filter
+  - `TC_14`: Verify date-range filter returns records within selected dates
+  - `TC_15`: Verify start date later than end date is rejected with 400
+  - `TC_16`: Verify reset clears all filters and restores authorized list
+  - `TC_17`: Verify filter count matches visible records
+  - `TC_18`: Verify sort by upload date newest first
+  - `TC_19`: Verify sort by upload date oldest first
+  - `TC_20`: Verify sort by title alphabetically
+  - `TC_21`: Verify sort by status defined rank order
+  - `TC_22`: Verify search handles leading and trailing spaces cleanly
+  - `TC_23`: Verify special characters in search are handled safely
+  - `TC_24`: Verify search input does not execute script and is treated as plain text
+  - `TC_25`: Verify results are restricted strictly to signed-in student
+  - `TC_26`: Verify direct document link respects authorization (403 for other student)
+  - `TC_27`: Verify pagination preserves active search
+  - `TC_28`: Verify pagination preserves active status filter
+  - `TC_29`: Verify no-results after conflicting search and status filter
+  - `TC_30`: Verify result list updates after document upload
+  - `TC_31`: Verify result list updates after status change (approval removes from pending)
+  - `TC_32`: Verify empty document list state contains helpful message and upload action
+  - `TC_33`: Verify loading indicator during search is present in markup and js
+  - `TC_34`: Verify search failure message and retry button are present in markup
+  - `TC_35`: Verify retry handler is registered in app.js
+  - `TC_36`: Verify search and filter controls support mobile viewport wrapping
+  - `TC_37`: Verify keyboard access and focusability of search and filter controls
+  - `TC_38`: Verify accessible labels for filter controls
+  - `TC_39`: Verify search result details accurately match the saved document metadata
+  - `TC_40`: Verify large result set with 500 records is queryable and paginated smoothly
+  - `US08_A01`: Students can search their own documents
+  - `US08_A02`: Faculty can search documents belonging to their assigned students
+  - `US08_A03`: Faculty should not see documents belonging to students assigned to another Faculty Advisor
+  - `US08_A04`: Faculty can filter documents by assigned student
+
 ```
-ℹ tests 296 | suites 7 | pass 296 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 340 | suites 8 | pass 340 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 296 Tests
+### Run All 340 Tests
 ```bash
 npm test
 ```
@@ -439,6 +489,7 @@ npm run test:us04    # Runs 43 tests for US04
 npm run test:us05    # Runs 44 tests for US05
 npm run test:us06    # Runs 45 tests for US06
 npm run test:us07    # Runs 44 tests for US07
+npm run test:us08    # Runs 44 tests for US08
 ```
 
 ### Start Server
