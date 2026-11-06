@@ -52,57 +52,8 @@
       "role": "Admin"
     }
   ],
-  "documents": [
-    {
-      "id": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
-      "studentId": "STU-2024-001",
-      "studentName": "John Doe",
-      "studentDepartment": "Computer Science & Engineering",
-      "assignedFacultyAdvisorId": "FAC-101",
-      "title": "Save Failure Doc",
-      "category": "Internship",
-      "dateOfAchievement": "2024-05-10",
-      "issuingOrganization": "Tech Org",
-      "originalFilename": "certificate.pdf",
-      "storageKey": "055aed12-4a31-4cd9-be62-624112dac798.pdf",
-      "fileSize": 79,
-      "mimeType": "application/pdf",
-      "extension": ".pdf",
-      "status": "Pending Approval",
-      "createdAt": "2026-11-05T12:08:51.946Z",
-      "updatedAt": "2026-11-05T12:08:51.946Z"
-    }
-  ],
-  "notifications": [
-    {
-      "id": "NOTIF-4b5bf4c9-8a44-4de9-8c84-6df748e70723",
-      "recipientId": "FAC-101",
-      "senderId": "STU-2024-001",
-      "documentId": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
-      "documentTitle": "Save Failure Doc",
-      "category": "Internship",
-      "title": "New Document Submitted for Verification",
-      "message": "Student John Doe has uploaded a new document \"Save Failure Doc\" under category \"Internship\" for review.",
-      "read": false,
-      "createdAt": "2026-11-05T12:08:51.946Z"
-    }
-  ],
-  "auditLogs": [
-    {
-      "id": "AUDIT-332582ff-f001-498e-af8f-7b7df0ad0fb0",
-      "action": "DOCUMENT_UPLOAD",
-      "actorId": "STU-2024-001",
-      "actorRole": "Student",
-      "targetId": "DOC-1103c4d3-aa5e-4e67-917c-2966da34c70f",
-      "details": {
-        "title": "Save Failure Doc",
-        "category": "Internship",
-        "originalFilename": "certificate.pdf",
-        "fileSize": 79,
-        "storageKey": "055aed12-4a31-4cd9-be62-624112dac798.pdf"
-      },
-      "timestamp": "2026-11-05T12:08:51.946Z"
-    }
-  ],
+  "documents": [],
+  "notifications": [],
+  "auditLogs": [],
   "reviewHistory": []
 }

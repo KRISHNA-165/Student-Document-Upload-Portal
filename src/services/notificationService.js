@@ -14,6 +14,9 @@ class NotificationService {
     if (action === 'REPLACED') {
       title = 'Document Updated / Replaced by Student';
       message = `Student ${studentName || studentId} has updated the document "${documentTitle}" under category "${category}".`;
+    } else if (action === 'RESUBMITTED') {
+      title = 'Document Resubmitted for Verification';
+      message = `Student ${studentName || studentId} has resubmitted the rejected document "${documentTitle}" under category "${category}" for review.`;
     }
 
     const notification = {

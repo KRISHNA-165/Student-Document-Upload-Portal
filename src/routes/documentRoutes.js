@@ -237,6 +237,41 @@ router.get('/:id/history', (req, res) => {
 });
 
 /**
+ * PUT /api/documents/:id/replacement - Replace a rejected document with a corrected version (US03)
+ */
+router.put('/:id/replacement', uploadSingle, async (req, res) => {
+  try {
+    const { title, category, dateOfAchievement, issuingOrganization } = req.body;
+    const file = req.file;
+
+    const metadata = {};
+    if (title !== undefined) metadata.title = title;
+    if (category !== undefined) metadata.category = category;
+    if (dateOfAchievement !== undefined) metadata.dateOfAchievement = dateOfAchievement;
+    if (issuingOrganization !== undefined) metadata.issuingOrganization = issuingOrganization;
+
+    const updatedDocument = await documentService.replaceRejectedDocument({
+      id: req.params.id,
+      user: req.user,
+      metadata,
+      file
+    });
+
+    return res.json({
+      success: true,
+      message: 'Replacement document submitted successfully and returned to Pending Approval',
+      document: updatedDocument
+    });
+  } catch (err) {
+    return res.status(err.statusCode || 500).json({
+      success: false,
+      message: err.message,
+      errors: err.errors || undefined
+    });
+  }
+});
+
+/**
  * PUT /api/documents/:id/replace - Replace document file/metadata when permitted
  */
 router.put('/:id/replace', uploadSingle, async (req, res) => {

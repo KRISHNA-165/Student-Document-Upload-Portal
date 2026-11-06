@@ -4,6 +4,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 
 - **User Story US01**: Student Document Upload
 - **User Story US02**: Faculty Review, Approval or Rejection
+- **User Story US03**: Replace Rejected Document
 
 ---
 
@@ -54,7 +55,24 @@ The application faithfully implements the Figma design specifications:
 
 ---
 
-## 🧪 Comprehensive Automated Test Suites (80/80 Tests Passing)
+## 📋 US03 Acceptance Criteria Verification (Replace Rejected Document)
+
+| Requirement | Implementation Details | Status |
+|---|---|:---:|
+| **Allowed Only for Rejected Status** | Replacement is restricted strictly to documents with `Rejected` status. Blocked for `Pending Approval` (400) and `Approved` (400). | ✅ Passed |
+| **New Replacement File Required** | A newly uploaded replacement file is mandatory for resubmission; submission without a file is blocked with 400. | ✅ Passed |
+| **File Format & Size Limits** | Enforces PDF, JPG, JPEG, and PNG formats up to 10 MB maximum with magic byte signature verification. | ✅ Passed |
+| **Metadata Update** | Student can update Document Title, Category, Date of Achievement, and Issuing Organization with full validation. | ✅ Passed |
+| **Status Transition** | Document status transitions back to `Pending Approval` upon successful resubmission. | ✅ Passed |
+| **Timestamp Recording** | Records new upload date and time (`updatedAt` and `resubmittedAt`). | ✅ Passed |
+| **Faculty Notification** | Assigned Faculty Advisor receives an automated resubmission notification (`action: 'RESUBMITTED'`). | ✅ Passed |
+| **Student Confirmation** | Student receives an automated notification confirming that the resubmission was received. | ✅ Passed |
+| **Rejection History Retained** | All previous faculty rejection decisions, timestamps, and feedback reasons are preserved in history. | ✅ Passed |
+| **Linkage Preserved** | Replacement updates the existing logical document and remains linked to the student profile (no duplicate records). | ✅ Passed |
+
+---
+
+## 🧪 Comprehensive Automated Test Suites (120/120 Tests Passing)
 
 ### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
 - **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
@@ -102,15 +120,58 @@ The application faithfully implements the Figma design specifications:
   - `TC_39`: Maintain review history after decision
   - `TC_40`: Handle save failure during review
 
+### 3. US03 Specification Suite (`tests/tc_us03_suite.test.js`)
+- **40/40 Tests Passing**:
+  - `TC_01`: Display Replace option for rejected document
+  - `TC_02`: Hide Replace option for approved document
+  - `TC_03`: Display rejection feedback
+  - `TC_04`: Open resubmission form
+  - `TC_05`: Pre-fill existing document metadata
+  - `TC_06`: Replace with a valid PDF
+  - `TC_07`: Replace with a valid JPG
+  - `TC_08`: Replace with a valid PNG
+  - `TC_09`: Reject unsupported replacement file
+  - `TC_10`: Reject replacement file above size limit
+  - `TC_11`: Require replacement file when needed
+  - `TC_12`: Require valid document title
+  - `TC_13`: Require document category
+  - `TC_14`: Require issuing organization
+  - `TC_15`: Validate achievement date
+  - `TC_16`: Preserve existing document linkage
+  - `TC_17`: Update document to Pending Approval
+  - `TC_18`: Show resubmission success message
+  - `TC_19`: Update modified/resubmission timestamp
+  - `TC_20`: Notify faculty about resubmission
+  - `TC_21`: Notify student that resubmission was received
+  - `TC_22`: Retain rejection history
+  - `TC_23`: Prevent duplicate resubmission on double-click
+  - `TC_24`: Cancel replacement before submitting
+  - `TC_25`: Confirm replacement if confirmation is required
+  - `TC_26`: Cancel replacement confirmation
+  - `TC_27`: Prevent replacing a document under review
+  - `TC_28`: Prevent unauthorized replacement (Student A vs Student B)
+  - `TC_29`: Prevent faculty from replacing student file
+  - `TC_30`: Handle missing original document
+  - `TC_31`: Handle replacement upload network failure
+  - `TC_32`: Handle server failure while saving replacement
+  - `TC_33`: Verify replacement file can be previewed
+  - `TC_34`: Verify replacement file can be downloaded
+  - `TC_35`: Verify old file is not shown as current
+  - `TC_36`: Verify faculty sees latest resubmission
+  - `TC_37`: Verify resubmission appears in student list
+  - `TC_38`: Verify document title after replacement
+  - `TC_39`: Verify category after replacement
+  - `TC_40`: Prevent replacement of another user's file through direct request
+
 ```
-ℹ tests 80 | suites 2 | pass 80 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 120 | suites 3 | pass 120 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 80 Tests
+### Run All 120 Tests
 ```bash
 npm test
 ```
@@ -119,6 +180,7 @@ npm test
 ```bash
 npm run test:us01    # Runs 40 tests for US01
 npm run test:us02    # Runs 40 tests for US02
+npm run test:us03    # Runs 40 tests for US03
 ```
 
 ### Start Server

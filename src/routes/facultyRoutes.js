@@ -36,6 +36,31 @@ router.get('/documents', requireRole('Faculty'), (req, res) => {
 });
 
 /**
+ * GET /api/faculty/pending
+ * List pending review queue for assigned students
+ */
+router.get('/pending', requireRole('Faculty'), (req, res) => {
+  try {
+    const documents = reviewService.getAssignedDocuments(req.user, {
+      status: 'Pending Approval'
+    });
+
+    return res.json({
+      success: true,
+      count: documents.length,
+      pendingDocuments: documents,
+      documents
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
  * GET /api/faculty/documents/:id
  * Retrieve a specific document for review
  */
@@ -85,3 +110,4 @@ router.post('/documents/:id/review', requireRole('Faculty'), async (req, res) =>
 });
 
 module.exports = router;
+

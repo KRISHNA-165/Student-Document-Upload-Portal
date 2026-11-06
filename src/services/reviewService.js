@@ -231,3 +231,4 @@ class ReviewService {
 const reviewInstance = new ReviewService();
 module.exports = reviewInstance;
 module.exports.ReviewService = ReviewService;
+
