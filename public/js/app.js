@@ -250,6 +250,24 @@ function setupEventListeners() {
   document.getElementById('btnRefreshFaculty').addEventListener('click', loadFacultyData);
   document.getElementById('btnRefreshAudit').addEventListener('click', loadAuditLogs);
 
+  // Student Document Filters (TC_12 - TC_22)
+  const studentSearchInput = document.getElementById('studentSearchInput');
+  const studentStatusFilter = document.getElementById('studentStatusFilter');
+  const studentSortFilter = document.getElementById('studentSortFilter');
+  const btnClearStudentFilters = document.getElementById('btnClearStudentFilters');
+
+  if (studentSearchInput) studentSearchInput.addEventListener('input', loadDocuments);
+  if (studentStatusFilter) studentStatusFilter.addEventListener('change', loadDocuments);
+  if (studentSortFilter) studentSortFilter.addEventListener('change', loadDocuments);
+  if (btnClearStudentFilters) {
+    btnClearStudentFilters.addEventListener('click', () => {
+      if (studentSearchInput) studentSearchInput.value = '';
+      if (studentStatusFilter) studentStatusFilter.value = 'All';
+      if (studentSortFilter) studentSortFilter.value = 'newest';
+      loadDocuments();
+    });
+  }
+
   // Modal close handlers
   btnClosePreview.addEventListener('click', () => previewModal.classList.add('hidden'));
   btnClosePreviewBtn.addEventListener('click', () => previewModal.classList.add('hidden'));
@@ -557,18 +575,40 @@ function showSuccessConfirmation(doc) {
 // -------------------------------------------------------------
 async function loadDocuments() {
   try {
-    const res = await fetch('/api/documents');
+    const searchEl = document.getElementById('studentSearchInput');
+    const statusEl = document.getElementById('studentStatusFilter');
+    const sortEl = document.getElementById('studentSortFilter');
+
+    const params = new URLSearchParams();
+    if (searchEl && searchEl.value.trim()) params.set('search', searchEl.value.trim());
+    if (statusEl && statusEl.value !== 'All') params.set('status', statusEl.value);
+    if (sortEl && sortEl.value) params.set('sort', sortEl.value);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`/api/documents${queryStr}`);
     const data = await res.json();
 
     if (!res.ok) throw new Error(data.message || 'Failed to load documents');
 
     const docs = data.documents || [];
-    myDocsCountBadge.textContent = docs.length;
+    myDocsCountBadge.textContent = data.total !== undefined ? data.total : docs.length;
+
+    // Update dashboard summary counters (TC_27)
+    if (data.summary) {
+      const summaryTotal = document.getElementById('summaryTotal');
+      const summaryPending = document.getElementById('summaryPending');
+      const summaryApproved = document.getElementById('summaryApproved');
+      const summaryRejected = document.getElementById('summaryRejected');
+      if (summaryTotal) summaryTotal.textContent = data.summary.total;
+      if (summaryPending) summaryPending.textContent = data.summary.pending;
+      if (summaryApproved) summaryApproved.textContent = data.summary.approved;
+      if (summaryRejected) summaryRejected.textContent = data.summary.rejected;
+    }
 
     if (docs.length === 0) {
       documentsTableBody.innerHTML = `
         <tr class="empty-row">
-          <td colspan="7">No documents uploaded yet. Use the "Upload Document" tab to submit your first certificate.</td>
+          <td colspan="7">No documents found. Use the "Upload Document" tab to submit a new document.</td>
         </tr>
       `;
       return;
@@ -962,6 +1002,27 @@ window.openReviewPanel = async function(id) {
   }
 };
 
+// Open Faculty Notification & Link directly to Document Review (US04)
+window.openFacultyNotification = async function(id) {
+  try {
+    const res = await fetch(`/api/faculty/notifications/${id}/open`);
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || 'Cannot open notification');
+    }
+
+    // Refresh notifications list to update read badge and unread count
+    await loadFacultyData();
+
+    // Open review modal for the linked document
+    if (data.document && data.document.id) {
+      window.openReviewPanel(data.document.id);
+    }
+  } catch (err) {
+    showAlert(err.message, 'danger');
+  }
+};
+
 function renderReviewPreview(doc) {
   const previewUrl = `/api/documents/${doc.id}/preview`;
 
@@ -1008,22 +1069,33 @@ function renderReviewHistory(history) {
 
 async function loadFacultyData() {
   try {
-    // 1. Notifications for Faculty
-    const notifRes = await fetch('/api/notifications');
+    // 1. Notifications for Faculty (US04)
+    let notifRes = await fetch('/api/faculty/notifications');
+    if (!notifRes.ok) notifRes = await fetch('/api/notifications');
     const notifData = await notifRes.json();
     const notifications = notifData.notifications || [];
-    facultyNotifCountBadge.textContent = notifications.length;
+    const unreadCount = notifData.unreadCount !== undefined ? notifData.unreadCount : notifications.filter(n => !n.read).length;
+    facultyNotifCountBadge.textContent = unreadCount > 0 ? `${unreadCount} unread` : notifications.length;
 
     if (notifications.length === 0) {
       notificationsList.innerHTML = '<p class="empty-state">No notifications received yet.</p>';
     } else {
       notificationsList.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.read ? '' : 'unread'}">
-          <div>
-            <div class="notif-title">${escapeHtml(n.title)}</div>
-            <div class="notif-message">${escapeHtml(n.message)}</div>
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="openFacultyNotification('${n.id}')" style="cursor:pointer;" title="Click to open linked document review">
+          <div style="width:100%;">
+            <div class="notif-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="display:flex; align-items:center; gap:6px;">
+                ${n.isResubmission ? '<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">🔄 RESUBMISSION</span>' : '<span class="badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem; font-weight:700;">📄 SUBMISSION</span>'}
+                <strong>${escapeHtml(n.title)}</strong>
+                ${!n.read ? '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.65rem;">NEW</span>' : ''}
+              </span>
+              <span class="notif-time" style="font-size:0.75rem; color:#94a3b8;">${new Date(n.submissionDate || n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div style="font-size:0.8rem; color:#475569; margin:4px 0 2px 0;">
+              Student: <strong>${escapeHtml(n.studentName || n.senderId || 'Student')}</strong> &bull; Category: <span class="badge" style="font-size:0.7rem;">${escapeHtml(n.category || 'General')}</span> &bull; Submitted: ${new Date(n.submissionDate || n.createdAt).toLocaleDateString()}
+            </div>
+            <div class="notif-message" style="font-size:0.85rem; color:#64748b;">${escapeHtml(n.message)}</div>
           </div>
-          <div class="notif-time">${new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
       `).join('');
     }

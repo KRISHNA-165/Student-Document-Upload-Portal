@@ -116,10 +116,69 @@ class DocumentService {
   }
 
   /**
-   * Retrieve documents for a student
+   * Retrieve documents for a student with filtering, searching, sorting, and pagination
    */
-  getDocumentsForStudent(studentId) {
-    return db.getDocuments({ studentId });
+  getDocumentsForStudent(studentId, options = {}) {
+    let docs = db.getDocuments({ studentId });
+
+    // Filter by status (TC_12, TC_13, TC_14, TC_15)
+    if (options.status && options.status !== 'all' && options.status !== 'All') {
+      const targetStatus = options.status.trim().toLowerCase();
+      docs = docs.filter(d => d.status && d.status.toLowerCase() === targetStatus);
+    }
+
+    // Filter by category
+    if (options.category && options.category !== 'all' && options.category !== 'All') {
+      const targetCategory = options.category.trim().toLowerCase();
+      docs = docs.filter(d => d.category && d.category.toLowerCase() === targetCategory);
+    }
+
+    // Search by title (TC_16, TC_17, TC_18, TC_19, TC_20)
+    if (options.search !== undefined && options.search !== null) {
+      const query = String(options.search).trim().toLowerCase();
+      if (query.length > 0) {
+        docs = docs.filter(d => d.title && d.title.toLowerCase().includes(query));
+      }
+    }
+
+    // Sorting (TC_21, TC_22)
+    const sortBy = (options.sort || options.sortBy || 'newest').toLowerCase();
+    const sortOrder = (options.sortOrder || (sortBy === 'oldest' ? 'asc' : 'desc')).toLowerCase();
+    docs.sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.submissionDate || 0).getTime();
+      const timeB = new Date(b.createdAt || b.submissionDate || 0).getTime();
+      if (timeA !== timeB) {
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+      return sortOrder === 'asc' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+    });
+
+    // Summary counts for student dashboard (TC_27)
+    const allStudentDocs = db.getDocuments({ studentId });
+    const summary = {
+      total: allStudentDocs.length,
+      pending: allStudentDocs.filter(d => d.status === CONSTANTS.STATUSES.PENDING_APPROVAL).length,
+      approved: allStudentDocs.filter(d => d.status === CONSTANTS.STATUSES.APPROVED).length,
+      rejected: allStudentDocs.filter(d => d.status === CONSTANTS.STATUSES.REJECTED).length
+    };
+
+    const totalCount = docs.length;
+
+    // Pagination (TC_39)
+    let paginatedDocs = docs;
+    if (options.page !== undefined || options.limit !== undefined) {
+      const page = Math.max(1, parseInt(options.page, 10) || 1);
+      const limit = Math.max(1, parseInt(options.limit, 10) || 10);
+      const start = (page - 1) * limit;
+      paginatedDocs = docs.slice(start, start + limit);
+    }
+
+    const returnArr = [...paginatedDocs];
+    returnArr.documents = paginatedDocs;
+    returnArr.total = totalCount;
+    returnArr.summary = summary;
+
+    return returnArr;
   }
 
   /**

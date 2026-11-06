@@ -5,6 +5,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US01**: Student Document Upload
 - **User Story US02**: Faculty Review, Approval or Rejection
 - **User Story US03**: Replace Rejected Document
+- **User Story US04**: Faculty Submission and Resubmission Notifications & Student Document Tracking
 
 ---
 
@@ -72,7 +73,22 @@ The application faithfully implements the Figma design specifications:
 
 ---
 
-## 🧪 Comprehensive Automated Test Suites (120/120 Tests Passing)
+## 📋 US04 Acceptance Criteria Verification (Faculty Notifications & Student Tracking)
+
+| Requirement | Implementation Details | Status |
+|---|---|:---:|
+| **New Submission Notification** | Faculty receives an automated notification for every newly submitted student document. | ✅ Passed |
+| **Complete Notification Payload** | Contains **Student Name**, **Document Title**, **Category**, and **Submission Date**. | ✅ Passed |
+| **Resubmissions Clearly Identified** | Flagged with `isResubmission: true` and `eventType: 'RESUBMISSION'`. | ✅ Passed |
+| **Faculty Notification Inbox** | Available via `GET /api/faculty/notifications` with unread counts and recent sorting. | ✅ Passed |
+| **Selecting Opens Review** | `GET /api/faculty/notifications/:id/open` marks as read and returns document review data. | ✅ Passed |
+| **Unread State by Default** | Newly created notifications are initialized as Unread (`read: false`). | ✅ Passed |
+| **Marked Read on Open** | Notifications transition to Read (`read: true`, `readAt: timestamp`) when opened. | ✅ Passed |
+| **Student Status Tracking** | Live status tracking (`Pending Approval`, `Approved`, `Rejected`), feedback visibility, filter & search. | ✅ Passed |
+
+---
+
+## 🧪 Comprehensive Automated Test Suites (163/163 Tests Passing)
 
 ### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
 - **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
@@ -163,15 +179,61 @@ The application faithfully implements the Figma design specifications:
   - `TC_39`: Verify category after replacement
   - `TC_40`: Prevent replacement of another user's file through direct request
 
+### 4. US04 Specification Suite (`tests/tc_us04_suite.test.js`)
+- **43/43 Tests Passing**:
+  - `TC_01`: Open My Documents page
+  - `TC_02`: Display uploaded documents
+  - `TC_03`: Display document title
+  - `TC_04`: Display document category
+  - `TC_05`: Display submission date
+  - `TC_06`: Display Pending Approval status
+  - `TC_07`: Display Approved status
+  - `TC_08`: Display Rejected status
+  - `TC_09`: Open document details
+  - `TC_10`: Display faculty feedback for rejected document
+  - `TC_11`: Hide rejection feedback for unrelated document
+  - `TC_12`: Filter documents by Pending Approval
+  - `TC_13`: Filter documents by Approved
+  - `TC_14`: Filter documents by Rejected
+  - `TC_15`: Clear status filter
+  - `TC_16`: Search by exact document title
+  - `TC_17`: Search by partial document title
+  - `TC_18`: Search with no matching title
+  - `TC_19`: Search is case-insensitive where supported
+  - `TC_20`: Handle blank search input
+  - `TC_21`: Sort documents by newest first
+  - `TC_22`: Sort documents by oldest first
+  - `TC_23`: Verify status after faculty approval
+  - `TC_24`: Verify status after faculty rejection
+  - `TC_25`: Verify status after resubmission
+  - `TC_26`: Refresh status after page reload
+  - `TC_27`: Verify dashboard status counts
+  - `TC_28`: Open document preview from list
+  - `TC_29`: Download a listed document
+  - `TC_30`: Display empty state for no documents
+  - `TC_31`: Prevent viewing another student's status
+  - `TC_32`: Verify status label consistency
+  - `TC_33`: Verify status color/visual indicator
+  - `TC_34`: Handle unavailable document record
+  - `TC_35`: Handle status service/network error
+  - `TC_36`: Prevent duplicate document rows
+  - `TC_37`: Display status update timestamp if supported
+  - `TC_38`: Verify student notification matches status
+  - `TC_39`: Verify document list pagination or scrolling
+  - `TC_40`: Verify status tracking after logout and login
+  - `US04_A01`: Faculty receives notification with student name, title, category, date
+  - `US04_A02`: Resubmissions clearly identified in notification
+  - `US04_A03`: Opening notification marks as Read and returns review details
+
 ```
-ℹ tests 120 | suites 3 | pass 120 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 163 | suites 4 | pass 163 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 120 Tests
+### Run All 163 Tests
 ```bash
 npm test
 ```
@@ -181,6 +243,7 @@ npm test
 npm run test:us01    # Runs 40 tests for US01
 npm run test:us02    # Runs 40 tests for US02
 npm run test:us03    # Runs 40 tests for US03
+npm run test:us04    # Runs 43 tests for US04
 ```
 
 ### Start Server
