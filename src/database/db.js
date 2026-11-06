@@ -56,6 +56,7 @@ class Database {
         username: 'johndoe',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Student'
       },
       {
@@ -69,6 +70,7 @@ class Database {
         assignedFacultyAdvisorName: 'Dr. Robert Smith',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Student'
       },
       {
@@ -82,6 +84,7 @@ class Database {
         assignedFacultyAdvisorName: 'Dr. Emily Davis',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Student'
       },
       {
@@ -95,6 +98,7 @@ class Database {
         assignedFacultyAdvisorName: 'Dr. Robert Smith',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Student'
       },
       {
@@ -108,6 +112,7 @@ class Database {
         assignedFacultyAdvisorName: 'Dr. Robert Smith',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Student'
       },
       {
@@ -115,6 +120,7 @@ class Database {
         username: 'robertsmith',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Faculty'
       },
       {
@@ -125,6 +131,7 @@ class Database {
         department: 'Electronics & Communication',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Faculty'
       },
       {
@@ -135,6 +142,7 @@ class Database {
         department: 'Central Administration',
         passwordSalt: defaultSalt,
         passwordHash: defaultHash,
+        status: 'Active',
         role: 'Admin'
       }
     ];
@@ -168,6 +176,35 @@ class Database {
 
   getAllUsers() {
     return [...this.data.users];
+  }
+
+  insertUser(user) {
+    if (!this.data.users) this.data.users = [];
+    this.data.users.unshift(user);
+    this.save();
+    return user;
+  }
+
+  updateUser(id, updates) {
+    if (!this.data.users) return null;
+    const index = this.data.users.findIndex(u => u.id === id);
+    if (index === -1) return null;
+    this.data.users[index] = {
+      ...this.data.users[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    this.save();
+    return this.data.users[index];
+  }
+
+  deleteUser(id) {
+    if (!this.data.users) return false;
+    const index = this.data.users.findIndex(u => u.id === id);
+    if (index === -1) return false;
+    this.data.users.splice(index, 1);
+    this.save();
+    return true;
   }
 
   // Sessions

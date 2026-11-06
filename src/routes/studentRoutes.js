@@ -48,3 +48,4 @@ router.get('/documents', requireAuth, requireRole('Student'), (req, res) => {
 });
 
 module.exports = router;
+

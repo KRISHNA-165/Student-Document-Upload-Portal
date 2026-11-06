@@ -98,6 +98,10 @@ class AuthService {
     });
 
     const user = db.getUserById(session.userId);
+    if (!user || user.status === 'Disabled') {
+      db.updateSession(token, { active: false, disabledAt: new Date(nowTime).toISOString() });
+      return { valid: false, reason: 'ACCOUNT_DISABLED', session };
+    }
     return { valid: true, session: updated, user };
   }
 
@@ -123,6 +127,13 @@ class AuthService {
     if (!user) {
       const err = new Error('Invalid username/email or password');
       err.statusCode = 401;
+      throw err;
+    }
+
+    // Account activation / deactivation check (US07 & TC_28)
+    if (user.status === 'Disabled' || user.active === false) {
+      const err = new Error('Account is deactivated. Please contact the administrator.');
+      err.statusCode = 403;
       throw err;
     }
 
@@ -243,3 +254,4 @@ class AuthService {
 module.exports = new AuthService();
 module.exports.AuthService = AuthService;
 module.exports.DEFAULT_INACTIVITY_TIMEOUT_MS = DEFAULT_INACTIVITY_TIMEOUT_MS;
+

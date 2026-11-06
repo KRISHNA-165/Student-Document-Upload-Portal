@@ -8,6 +8,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US04**: Faculty Submission and Resubmission Notifications & Student Document Tracking
 - **User Story US05**: Document Review History & Student Notifications
 - **User Story US06**: Secure Student Login & Student Dashboard
+- **User Story US07**: Admin User and Faculty Management
 
 ---
 
@@ -122,7 +123,22 @@ The application faithfully implements the Figma design specifications:
 
 ---
 
-## 🧪 Comprehensive Automated Test Suites (252/252 Tests Passing)
+## 📋 US07 Acceptance Criteria Verification (Admin User and Faculty Management)
+
+| Requirement | Implementation Details | Status |
+|---|---|:---:|
+| **Create & Manage Student Accounts** | Admin can create, inspect, edit, and deactivate student accounts via `POST /api/admin/users` and `PATCH /api/admin/users/:id`. | ✅ Passed |
+| **Manage Faculty Advisor Accounts** | Admin can provision and manage Faculty Advisor accounts with employee profiles and departments. | ✅ Passed |
+| **Assign Students to Faculty Advisors** | Admin can assign any student to an active Faculty Advisor via `PUT /api/admin/students/:studentId/advisor`. | ✅ Passed |
+| **Reassign Faculty Advisor** | Admin can reassign a student's advisor at any time; updates are immediately reflected in document routing. | ✅ Passed |
+| **Deactivated Users Cannot Log In** | Deactivated accounts (`status: 'Disabled'`) are rejected at login (`403 Forbidden`) and their active sessions are invalidated. | ✅ Passed |
+| **Historical Records Maintained** | Deactivating an account preserves all uploaded documents, review histories, and audit records (no cascade deletions). | ✅ Passed |
+| **Restricted to Administrators** | All administrative endpoints strictly enforce `requireRole('Admin')`; unauthorized attempts are rejected with `403`. | ✅ Passed |
+| **Administrative Audit Logging** | All user creation, profile updates, status changes, and advisor reassignments are recorded in immutable audit logs. | ✅ Passed |
+
+---
+
+## 🧪 Comprehensive Automated Test Suites (296/296 Tests Passing)
 
 ### 1. US01 Specification Suite (`tests/tc_suite.test.js`)
 - **40/40 Tests Passing**: Form presence, field validations, format restrictions (PDF, JPG, PNG vs EXE, DOCX, ZIP), 10 MB limit boundaries, future date checks, whitespace trimming, initial `Pending Approval` status, student profile linkage, view/download/replace, faculty notifications.
@@ -354,15 +370,62 @@ The application faithfully implements the Figma design specifications:
   - `US06_A04`: Logout terminates active session
   - `US06_A05`: Student cannot delete another student's document
 
+### 7. US07 Specification Suite (`tests/tc_us07_suite.test.js`)
+- **44/44 Tests Passing**:
+  - `TC_01`: Verify admin user-management page opens
+  - `TC_02`: Verify non-admin cannot access user management
+  - `TC_03`: Verify user list displays registered users
+  - `TC_04`: Verify user name is displayed correctly
+  - `TC_05`: Verify user email is displayed correctly
+  - `TC_06`: Verify role is displayed for each user
+  - `TC_07`: Verify account status is displayed
+  - `TC_08`: Verify admin can search users by name
+  - `TC_09`: Verify admin can search users by email
+  - `TC_10`: Verify user search handles no matches
+  - `TC_11`: Verify user list can be filtered by role
+  - `TC_12`: Verify user list can be filtered by account status
+  - `TC_13`: Verify clearing filters restores full list
+  - `TC_14`: Verify user list sorting by name
+  - `TC_15`: Verify user list pagination
+  - `TC_16`: Verify admin can open a user's details
+  - `TC_17`: Verify user details show correct profile data
+  - `TC_18`: Verify admin can create a user when supported
+  - `TC_19`: Verify required fields when creating a user
+  - `TC_20`: Verify invalid email is rejected during user creation
+  - `TC_21`: Verify duplicate email is rejected
+  - `TC_22`: Verify user role assignment
+  - `TC_23`: Verify admin can edit permitted user details
+  - `TC_24`: Verify email change validation
+  - `TC_25`: Verify canceling user edits discards changes
+  - `TC_26`: Verify admin can disable an account when supported
+  - `TC_27`: Verify canceling disable confirmation makes no change
+  - `TC_28`: Verify disabled user cannot sign in
+  - `TC_29`: Verify admin can re-enable a disabled account when supported
+  - `TC_30`: Verify protected admin role cannot be removed accidentally
+  - `TC_31`: Verify role changes affect permissions
+  - `TC_32`: Verify user-management changes persist after refresh
+  - `TC_33`: Verify user list reflects newly created accounts
+  - `TC_34`: Verify user list reflects account status changes
+  - `TC_35`: Verify error handling when user service fails
+  - `TC_36`: Verify retry after user-list failure
+  - `TC_37`: Verify user list layout on mobile
+  - `TC_38`: Verify keyboard navigation in user management
+  - `TC_39`: Verify confirmation is shown before destructive action
+  - `TC_40`: Verify user data is not exposed through unauthorized requests
+  - `US07_A01`: Admin can assign students to Faculty Advisors
+  - `US07_A02`: Admin can change student's assigned Faculty Advisor
+  - `US07_A03`: System maintains student and assigned Faculty Advisor relationship
+  - `US07_A04`: Changes to user assignments are recorded in audit logs
+
 ```
-ℹ tests 252 | suites 6 | pass 252 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 296 | suites 7 | pass 296 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 252 Tests
+### Run All 296 Tests
 ```bash
 npm test
 ```
@@ -375,6 +438,7 @@ npm run test:us03    # Runs 40 tests for US03
 npm run test:us04    # Runs 43 tests for US04
 npm run test:us05    # Runs 44 tests for US05
 npm run test:us06    # Runs 45 tests for US06
+npm run test:us07    # Runs 44 tests for US07
 ```
 
 ### Start Server
