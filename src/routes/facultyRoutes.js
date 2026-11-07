@@ -9,23 +9,76 @@ const router = express.Router();
 /**
  * GET /api/faculty/documents
  * List documents submitted by students assigned to the current faculty advisor
- * Supports query params: status, category, search, startDate, endDate
+ * Supports query params: status, category, search, startDate, endDate, from, to, studentId, student, sort, sortBy, sortOrder, page, limit
  */
 router.get('/documents', requireRole('Faculty'), (req, res) => {
   try {
-    const { status, category, search, startDate, endDate } = req.query;
-    const documents = reviewService.getAssignedDocuments(req.user, {
+    const {
       status,
       category,
       search,
       startDate,
-      endDate
+      endDate,
+      from,
+      to,
+      studentId,
+      student,
+      sort,
+      sortBy,
+      sortOrder,
+      page,
+      limit
+    } = req.query;
+
+    const result = reviewService.getAssignedDocuments(req.user, {
+      status,
+      category,
+      search,
+      startDate: startDate || from,
+      endDate: endDate || to,
+      studentId: studentId || student,
+      sort,
+      sortBy,
+      sortOrder,
+      page,
+      limit
     });
+
+    const docs = result.documents || result;
+    const total = result.total !== undefined ? result.total : docs.length;
+    const parsedPage = result.page || Math.max(1, parseInt(page, 10) || 1);
+    const parsedLimit = result.limit || Math.max(1, parseInt(limit, 10) || 10);
+    const totalPages = result.totalPages || (parsedLimit > 0 ? Math.ceil(total / parsedLimit) : 1);
 
     return res.json({
       success: true,
-      count: documents.length,
-      documents
+      count: docs.length,
+      total,
+      page: parsedPage,
+      limit: parsedLimit,
+      totalPages,
+      documents: docs
+    });
+  } catch (err) {
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/faculty/assigned-students
+ * Retrieve distinct students assigned to the logged-in Faculty Advisor
+ */
+router.get('/assigned-students', requireRole('Faculty'), (req, res) => {
+  try {
+    const students = reviewService.getAssignedStudents(req.user);
+    return res.json({
+      success: true,
+      count: students.length,
+      students
     });
   } catch (err) {
     const statusCode = err.statusCode || 500;

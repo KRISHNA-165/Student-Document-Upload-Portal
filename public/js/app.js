@@ -327,21 +327,58 @@ function setupEventListeners() {
   document.getElementById('btnRefreshFaculty').addEventListener('click', loadFacultyData);
   document.getElementById('btnRefreshAudit').addEventListener('click', loadAuditLogs);
 
-  // Student Document Filters (TC_12 - TC_22)
+  // Student Document Filters (US08: TC_01 - TC_40)
   const studentSearchInput = document.getElementById('studentSearchInput');
+  const studentCategoryFilter = document.getElementById('studentCategoryFilter');
   const studentStatusFilter = document.getElementById('studentStatusFilter');
+  const studentStartDate = document.getElementById('studentStartDate');
+  const studentEndDate = document.getElementById('studentEndDate');
   const studentSortFilter = document.getElementById('studentSortFilter');
   const btnClearStudentFilters = document.getElementById('btnClearStudentFilters');
+  const btnResetNoResults = document.getElementById('btnResetNoResults');
+  const btnEmptyUploadDocs = document.getElementById('btnEmptyUploadDocs');
+  const btnRetryStudentSearch = document.getElementById('btnRetryStudentSearch');
+  const btnStudentPrevPage = document.getElementById('btnStudentPrevPage');
+  const btnStudentNextPage = document.getElementById('btnStudentNextPage');
 
-  if (studentSearchInput) studentSearchInput.addEventListener('input', loadDocuments);
-  if (studentStatusFilter) studentStatusFilter.addEventListener('change', loadDocuments);
-  if (studentSortFilter) studentSortFilter.addEventListener('change', loadDocuments);
-  if (btnClearStudentFilters) {
-    btnClearStudentFilters.addEventListener('click', () => {
-      if (studentSearchInput) studentSearchInput.value = '';
-      if (studentStatusFilter) studentStatusFilter.value = 'All';
-      if (studentSortFilter) studentSortFilter.value = 'newest';
-      loadDocuments();
+  let studentDebounceTimer;
+  if (studentSearchInput) {
+    studentSearchInput.addEventListener('input', () => {
+      clearTimeout(studentDebounceTimer);
+      studentDebounceTimer = setTimeout(() => loadDocuments(1), 250);
+    });
+  }
+  if (studentCategoryFilter) studentCategoryFilter.addEventListener('change', () => loadDocuments(1));
+  if (studentStatusFilter) studentStatusFilter.addEventListener('change', () => loadDocuments(1));
+  if (studentStartDate) studentStartDate.addEventListener('change', () => loadDocuments(1));
+  if (studentEndDate) studentEndDate.addEventListener('change', () => loadDocuments(1));
+  if (studentSortFilter) studentSortFilter.addEventListener('change', () => loadDocuments(1));
+
+  function resetAllStudentFilters() {
+    if (studentSearchInput) studentSearchInput.value = '';
+    if (studentCategoryFilter) studentCategoryFilter.value = 'All';
+    if (studentStatusFilter) studentStatusFilter.value = 'All';
+    if (studentStartDate) studentStartDate.value = '';
+    if (studentEndDate) studentEndDate.value = '';
+    if (studentSortFilter) studentSortFilter.value = 'newest';
+    const dateErrorEl = document.getElementById('studentDateError');
+    if (dateErrorEl) dateErrorEl.classList.add('hidden');
+    loadDocuments(1);
+  }
+
+  if (btnClearStudentFilters) btnClearStudentFilters.addEventListener('click', resetAllStudentFilters);
+  if (btnResetNoResults) btnResetNoResults.addEventListener('click', resetAllStudentFilters);
+  if (btnEmptyUploadDocs) btnEmptyUploadDocs.addEventListener('click', () => switchTab('uploadTab'));
+  if (btnRetryStudentSearch) btnRetryStudentSearch.addEventListener('click', () => loadDocuments(studentCurrentPage));
+
+  if (btnStudentPrevPage) {
+    btnStudentPrevPage.addEventListener('click', () => {
+      if (studentCurrentPage > 1) loadDocuments(studentCurrentPage - 1);
+    });
+  }
+  if (btnStudentNextPage) {
+    btnStudentNextPage.addEventListener('click', () => {
+      if (studentCurrentPage < studentTotalPages) loadDocuments(studentCurrentPage + 1);
     });
   }
 
@@ -670,29 +707,98 @@ function showSuccessConfirmation(doc) {
 }
 
 // -------------------------------------------------------------
-// Document List & Actions (View, Download, Replace)
+// Document List & Actions (View, Download, Replace) - US08
 // -------------------------------------------------------------
-async function loadDocuments() {
+let studentCurrentPage = 1;
+let studentTotalPages = 1;
+
+async function loadDocuments(page = 1) {
+  if (typeof page === 'number') studentCurrentPage = page;
   try {
     const searchEl = document.getElementById('studentSearchInput');
+    const categoryEl = document.getElementById('studentCategoryFilter');
     const statusEl = document.getElementById('studentStatusFilter');
+    const startEl = document.getElementById('studentStartDate');
+    const endEl = document.getElementById('studentEndDate');
     const sortEl = document.getElementById('studentSortFilter');
+    const dateErrorEl = document.getElementById('studentDateError');
+    const loadingEl = document.getElementById('studentSearchLoading');
+    const errorEl = document.getElementById('studentSearchError');
+    const visibleCountEl = document.getElementById('studentVisibleCount');
+    const totalCountEl = document.getElementById('studentTotalCount');
+    const activeBadgeEl = document.getElementById('studentActiveFiltersBadge');
+    const emptyDocsState = document.getElementById('studentEmptyDocsState');
+    const noResultsState = document.getElementById('studentNoResultsState');
+    const tableWrapper = document.getElementById('studentTableWrapper');
+    const pageInfo = document.getElementById('studentPageInfo');
+    const prevBtn = document.getElementById('btnStudentPrevPage');
+    const nextBtn = document.getElementById('btnStudentNextPage');
+
+    if (errorEl) errorEl.classList.add('hidden');
+
+    const startDate = startEl ? startEl.value : '';
+    const endDate = endEl ? endEl.value : '';
+
+    // Date range validation (TC_15)
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      if (dateErrorEl) dateErrorEl.classList.remove('hidden');
+      return;
+    } else {
+      if (dateErrorEl) dateErrorEl.classList.add('hidden');
+    }
+
+    if (loadingEl) loadingEl.classList.remove('hidden');
 
     const params = new URLSearchParams();
-    if (searchEl && searchEl.value.trim()) params.set('search', searchEl.value.trim());
-    if (statusEl && statusEl.value !== 'All') params.set('status', statusEl.value);
-    if (sortEl && sortEl.value) params.set('sort', sortEl.value);
+    const searchVal = searchEl ? searchEl.value.trim() : '';
+    const categoryVal = categoryEl ? categoryEl.value : 'All';
+    const statusVal = statusEl ? statusEl.value : 'All';
+    const sortVal = sortEl ? sortEl.value : 'newest';
+
+    const hasActiveFilters = Boolean(
+      searchVal ||
+      (categoryVal && categoryVal !== 'All') ||
+      (statusVal && statusVal !== 'All') ||
+      startDate ||
+      endDate
+    );
+
+    if (activeBadgeEl) {
+      if (hasActiveFilters) activeBadgeEl.classList.remove('hidden');
+      else activeBadgeEl.classList.add('hidden');
+    }
+
+    if (searchVal) params.set('search', searchVal);
+    if (categoryVal && categoryVal !== 'All') params.set('category', categoryVal);
+    if (statusVal && statusVal !== 'All') params.set('status', statusVal);
+    if (startDate) params.set('from', startDate);
+    if (endDate) params.set('to', endDate);
+    if (sortVal) params.set('sort', sortVal);
+    params.set('page', studentCurrentPage);
+    params.set('limit', 10);
 
     const queryStr = params.toString() ? `?${params.toString()}` : '';
     const res = await fetch(`/api/documents${queryStr}`);
     const data = await res.json();
 
+    if (loadingEl) loadingEl.classList.add('hidden');
+
     if (!res.ok) throw new Error(data.message || 'Failed to load documents');
 
     const docs = data.documents || [];
-    myDocsCountBadge.textContent = data.total !== undefined ? data.total : docs.length;
+    const total = data.total !== undefined ? data.total : docs.length;
+    studentTotalPages = data.totalPages || Math.ceil(total / 10) || 1;
 
-    // Update dashboard summary counters (TC_27)
+    myDocsCountBadge.textContent = total;
+    if (visibleCountEl) visibleCountEl.textContent = docs.length;
+    if (totalCountEl) totalCountEl.textContent = total;
+
+    // Update pagination
+    if (pageInfo) pageInfo.textContent = `Page ${studentCurrentPage} of ${Math.max(1, studentTotalPages)}`;
+    if (prevBtn) prevBtn.disabled = studentCurrentPage <= 1;
+    if (nextBtn) nextBtn.disabled = studentCurrentPage >= studentTotalPages;
+
+    // Update dashboard summary counters (TC_17)
     if (data.summary) {
       const summaryTotal = document.getElementById('summaryTotal');
       const summaryPending = document.getElementById('summaryPending');
@@ -705,13 +811,22 @@ async function loadDocuments() {
     }
 
     if (docs.length === 0) {
-      documentsTableBody.innerHTML = `
-        <tr class="empty-row">
-          <td colspan="7">No documents found. Use the "Upload Document" tab to submit a new document.</td>
-        </tr>
-      `;
+      if (tableWrapper) tableWrapper.classList.add('hidden');
+      const isCompletelyEmpty = !hasActiveFilters && (!data.summary || data.summary.total === 0);
+      if (isCompletelyEmpty) {
+        if (emptyDocsState) emptyDocsState.classList.remove('hidden');
+        if (noResultsState) noResultsState.classList.add('hidden');
+      } else {
+        if (emptyDocsState) emptyDocsState.classList.add('hidden');
+        if (noResultsState) noResultsState.classList.remove('hidden');
+      }
+      documentsTableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No documents found. No documents uploaded yet.</td></tr>';
       return;
     }
+
+    if (tableWrapper) tableWrapper.classList.remove('hidden');
+    if (emptyDocsState) emptyDocsState.classList.add('hidden');
+    if (noResultsState) noResultsState.classList.add('hidden');
 
     documentsTableBody.innerHTML = docs.map(doc => {
       const uploadTime = new Date(doc.createdAt).toLocaleString();
@@ -759,7 +874,16 @@ async function loadDocuments() {
       `;
     }).join('');
   } catch (err) {
-    showAlert(err.message, 'danger');
+    const loadingEl = document.getElementById('studentSearchLoading');
+    if (loadingEl) loadingEl.classList.add('hidden');
+    const errorEl = document.getElementById('studentSearchError');
+    const errorMsgEl = document.getElementById('studentSearchErrorMessage');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsgEl) errorMsgEl.textContent = err.message || 'Failed to load documents';
+    } else {
+      showAlert(err.message, 'danger');
+    }
   }
 }
 
@@ -907,12 +1031,14 @@ async function handleReplaceSubmit(e) {
 let pendingDecisionData = null;
 let isReviewingDecision = false;
 
-// Filter and search elements
+// Filter and search elements (US08)
 const facultySearchInput = document.getElementById('facultySearchInput');
+const facultyStudentFilter = document.getElementById('facultyStudentFilter');
 const facultyCategoryFilter = document.getElementById('facultyCategoryFilter');
 const facultyStatusFilter = document.getElementById('facultyStatusFilter');
 const facultyStartDate = document.getElementById('facultyStartDate');
 const facultyEndDate = document.getElementById('facultyEndDate');
+const facultySortFilter = document.getElementById('facultySortFilter');
 const btnClearFacultyFilters = document.getElementById('btnClearFacultyFilters');
 
 // Review panel elements
@@ -934,6 +1060,26 @@ const btnExecuteDecision = document.getElementById('btnExecuteDecision');
 const decisionConfirmText = document.getElementById('decisionConfirmText');
 const decisionConfirmCommentSummary = document.getElementById('decisionConfirmCommentSummary');
 
+let hasLoadedAssignedStudents = false;
+async function loadAssignedStudentsForFaculty() {
+  if (!facultyStudentFilter) return;
+  try {
+    const res = await fetch('/api/faculty/assigned-students');
+    if (!res.ok) return;
+    const data = await res.json();
+    const students = data.students || [];
+    const currentVal = facultyStudentFilter.value;
+    facultyStudentFilter.innerHTML = '<option value="ALL">All Assigned Students</option>' +
+      students.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)} (${escapeHtml(s.id)})</option>`).join('');
+    if (students.some(s => s.id === currentVal)) {
+      facultyStudentFilter.value = currentVal;
+    }
+    hasLoadedAssignedStudents = true;
+  } catch (e) {
+    console.warn('Could not load assigned students list:', e);
+  }
+}
+
 function setupFacultyReviewListeners() {
   if (facultySearchInput) {
     let debounceTimer;
@@ -943,18 +1089,24 @@ function setupFacultyReviewListeners() {
     });
   }
 
+  if (facultyStudentFilter) facultyStudentFilter.addEventListener('change', loadFacultyData);
   if (facultyCategoryFilter) facultyCategoryFilter.addEventListener('change', loadFacultyData);
   if (facultyStatusFilter) facultyStatusFilter.addEventListener('change', loadFacultyData);
   if (facultyStartDate) facultyStartDate.addEventListener('change', loadFacultyData);
   if (facultyEndDate) facultyEndDate.addEventListener('change', loadFacultyData);
+  if (facultySortFilter) facultySortFilter.addEventListener('change', loadFacultyData);
 
   if (btnClearFacultyFilters) {
     btnClearFacultyFilters.addEventListener('click', () => {
       if (facultySearchInput) facultySearchInput.value = '';
+      if (facultyStudentFilter) facultyStudentFilter.value = 'ALL';
       if (facultyCategoryFilter) facultyCategoryFilter.value = 'ALL';
-      if (facultyStatusFilter) facultyStatusFilter.value = 'Pending Approval';
+      if (facultyStatusFilter) facultyStatusFilter.value = 'ALL';
       if (facultyStartDate) facultyStartDate.value = '';
       if (facultyEndDate) facultyEndDate.value = '';
+      if (facultySortFilter) facultySortFilter.value = 'newest';
+      const dateErrorEl = document.getElementById('facultyDateError');
+      if (dateErrorEl) dateErrorEl.classList.add('hidden');
       loadFacultyData();
     });
   }
@@ -1199,23 +1351,43 @@ async function loadFacultyData() {
       `).join('');
     }
 
-    // 2. Assigned Submissions (with search and filters)
-    let queryParams = new URLSearchParams();
-    const searchVal = facultySearchInput ? facultySearchInput.value.trim() : '';
-    const categoryVal = facultyCategoryFilter ? facultyCategoryFilter.value : 'ALL';
-    const statusVal = facultyStatusFilter ? facultyStatusFilter.value : 'Pending Approval';
+    // 2. Assigned Submissions (with search and filters - US08)
+    await loadAssignedStudentsForFaculty();
+
+    const dateErrorEl = document.getElementById('facultyDateError');
     const startDateVal = facultyStartDate ? facultyStartDate.value : '';
     const endDateVal = facultyEndDate ? facultyEndDate.value : '';
 
+    if (startDateVal && endDateVal && new Date(startDateVal) > new Date(endDateVal)) {
+      if (dateErrorEl) dateErrorEl.classList.remove('hidden');
+      return;
+    } else {
+      if (dateErrorEl) dateErrorEl.classList.add('hidden');
+    }
+
+    let queryParams = new URLSearchParams();
+    const searchVal = facultySearchInput ? facultySearchInput.value.trim() : '';
+    const studentVal = facultyStudentFilter ? facultyStudentFilter.value : 'ALL';
+    const categoryVal = facultyCategoryFilter ? facultyCategoryFilter.value : 'ALL';
+    const statusVal = facultyStatusFilter ? facultyStatusFilter.value : 'ALL';
+    const sortVal = facultySortFilter ? facultySortFilter.value : 'newest';
+
     if (searchVal) queryParams.set('search', searchVal);
-    if (categoryVal) queryParams.set('category', categoryVal);
-    if (statusVal) queryParams.set('status', statusVal);
+    if (studentVal && studentVal !== 'ALL') queryParams.set('studentId', studentVal);
+    if (categoryVal && categoryVal !== 'ALL') queryParams.set('category', categoryVal);
+    if (statusVal && statusVal !== 'ALL') queryParams.set('status', statusVal);
     if (startDateVal) queryParams.set('startDate', startDateVal);
     if (endDateVal) queryParams.set('endDate', endDateVal);
+    if (sortVal) queryParams.set('sort', sortVal);
 
     const docsRes = await fetch(`/api/faculty/documents?${queryParams.toString()}`);
     const docsData = await docsRes.json();
     const docs = docsData.documents || [];
+
+    const visibleCount = document.getElementById('facultyVisibleCount');
+    const totalCount = document.getElementById('facultyTotalCount');
+    if (visibleCount) visibleCount.textContent = docs.length;
+    if (totalCount) totalCount.textContent = docsData.total !== undefined ? docsData.total : docs.length;
 
     if (docs.length === 0) {
       facultyDocsTableBody.innerHTML = '<tr class="empty-row"><td colspan="7">No student submissions matching the filter criteria.</td></tr>';

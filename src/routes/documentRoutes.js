@@ -76,31 +76,43 @@ router.post('/', uploadSingle, async (req, res) => {
 });
 
 /**
- * GET /api/documents - List documents for current user
+ * GET /api/documents - List documents for current user with search, filtering, and pagination
  */
 router.get('/', (req, res) => {
   try {
     let docs = [];
     let summary = null;
     let total = 0;
+    let page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    let limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    let totalPages = 1;
+
     if (req.user.role === 'Student') {
       const result = documentService.getDocumentsForStudent(req.user.id, req.query);
       docs = result.documents || result;
       summary = result.summary || null;
       total = result.total !== undefined ? result.total : docs.length;
+      page = result.page || page;
+      limit = result.limit || limit;
+      totalPages = result.totalPages || (limit > 0 ? Math.ceil(total / limit) : 1);
     } else {
       docs = documentService.getAllDocuments();
       total = docs.length;
+      totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
     }
     return res.json({
       success: true,
       count: docs.length,
       total,
+      page,
+      limit,
+      totalPages,
       summary,
       documents: docs
     });
   } catch (err) {
-    return res.status(500).json({
+    const statusCode = err.statusCode || 500;
+    return res.status(statusCode).json({
       success: false,
       message: err.message
     });
