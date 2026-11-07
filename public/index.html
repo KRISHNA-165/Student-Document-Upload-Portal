@@ -379,6 +379,9 @@
         <button class="tab-button" id="tabAuditBtn" data-tab="auditTab" role="tab" aria-selected="false">
           📜 Audit Logs
         </button>
+        <button class="tab-button" id="tabReportsBtn" data-tab="reportsTab" role="tab" aria-selected="false">
+          📈 Reports & Analytics
+        </button>
       </nav>
 
       <!-- Global Alerts -->
@@ -1009,6 +1012,163 @@
                 <tr class="empty-row"><td colspan="6">Loading logs...</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 6: REPORTS & ANALYTICS (US09) ================= -->
+      <section id="reportsTab" class="tab-panel" role="tabpanel">
+        <div class="card">
+          <div class="card-header flex-between" style="flex-wrap:wrap; gap:12px;">
+            <div>
+              <h2>Reports & Analytics</h2>
+              <p class="section-desc">Verification performance metrics, category distribution, and exportable reports.</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <span id="reportGeneratedTime" style="font-size:0.75rem; color:#64748b;">Generated: Just now</span>
+              <button class="btn btn-secondary btn-sm" id="btnRefreshReport" title="Refresh report metrics">🔄 Refresh</button>
+              <button class="btn btn-secondary btn-sm" id="btnExportCSV" title="Export as CSV">📥 Export CSV</button>
+              <button class="btn btn-secondary btn-sm" id="btnExportExcel" title="Export as Excel">📊 Export Excel</button>
+            </div>
+          </div>
+
+          <!-- Report Filters Bar (TC_08 - TC_10, TC_27, TC_38) -->
+          <div class="report-filters-bar" style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <label for="reportStartDate" style="font-size:0.8rem; font-weight:600; color:#475569;">From:</label>
+              <input
+                type="date"
+                id="reportStartDate"
+                class="form-control form-select-sm"
+                aria-label="Report start date"
+                style="width:auto;"
+              >
+              <label for="reportEndDate" style="font-size:0.8rem; font-weight:600; color:#475569;">To:</label>
+              <input
+                type="date"
+                id="reportEndDate"
+                class="form-control form-select-sm"
+                aria-label="Report end date"
+                style="width:auto;"
+              >
+              <select id="reportCategoryFilter" class="form-control form-select-sm" style="width:auto;" aria-label="Filter report by category">
+                <option value="ALL">All Categories</option>
+                <option value="Achievement">Achievement</option>
+                <option value="Internship">Internship</option>
+                <option value="Participation Certificate">Participation Certificate</option>
+                <option value="Academic Record">Academic Record</option>
+                <option value="Certification">Certification</option>
+                <option value="Other">Other</option>
+              </select>
+              <select id="reportStatusFilter" class="form-control form-select-sm" style="width:auto;" aria-label="Filter report by status">
+                <option value="ALL">All Statuses</option>
+                <option value="Pending Approval">Pending Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnResetReportFilters">Reset Filters</button>
+            </div>
+          </div>
+
+          <!-- Date Range Error Alert (TC_09) -->
+          <div id="reportDateError" class="alert alert-danger hidden" role="alert" style="margin-bottom:12px;">
+            ⚠️ Start date cannot be later than end date. Please adjust your date range.
+          </div>
+
+          <!-- Report Loading State (TC_17) -->
+          <div id="reportLoadingState" class="loading-state hidden" role="status" aria-live="polite" style="padding:16px;">
+            <div class="spinner"></div>
+            <p>Generating analytics report...</p>
+          </div>
+
+          <!-- Report Error State with Retry (TC_18, TC_19) -->
+          <div id="reportErrorState" class="alert alert-danger hidden" role="alert" style="margin-bottom:12px;">
+            <span id="reportErrorMessage">Failed to generate report.</span>
+            <button type="button" class="btn btn-outline-danger btn-sm ml-2" id="btnRetryReport">Retry</button>
+          </div>
+
+          <!-- Summary Metrics Cards (TC_03 - TC_07) -->
+          <div class="dash-metrics-grid" style="margin-bottom:20px;">
+            <div class="metric-card" id="cardReportTotal">
+              <div class="metric-label">Total Documents</div>
+              <div class="metric-value" id="reportTotalDocs">0</div>
+              <div class="metric-desc">Total submissions</div>
+            </div>
+            <div class="metric-card metric-pending" id="cardReportPending">
+              <div class="metric-label">Pending Approval</div>
+              <div class="metric-value" id="reportPendingDocs">0</div>
+              <div class="metric-desc">Awaiting review</div>
+            </div>
+            <div class="metric-card metric-approved" id="cardReportApproved">
+              <div class="metric-label">Approved</div>
+              <div class="metric-value" id="reportApprovedDocs">0</div>
+              <div class="metric-desc">Verified and authentic</div>
+            </div>
+            <div class="metric-card metric-rejected" id="cardReportRejected">
+              <div class="metric-label">Rejected</div>
+              <div class="metric-value" id="reportRejectedDocs">0</div>
+              <div class="metric-desc">Action required</div>
+            </div>
+            <div class="metric-card" id="cardReportApprovalRate">
+              <div class="metric-label">Approval Rate</div>
+              <div class="metric-value" id="reportApprovalRate">0%</div>
+              <div class="metric-desc">Decided approvals</div>
+            </div>
+          </div>
+
+          <!-- Visual Distribution Charts (TC_14, TC_15, TC_34) -->
+          <div class="report-charts-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:24px;">
+            <!-- Status Distribution Card -->
+            <div class="card" style="padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+              <h4 style="font-size:0.95rem; margin-bottom:8px; font-weight:700;">Status Distribution</h4>
+              <p id="reportChartSummary" class="sr-only" aria-live="polite">Status distribution summary</p>
+              <div id="reportStatusBars" role="region" aria-label="Status distribution chart" style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+                <!-- Generated status bars dynamically -->
+              </div>
+            </div>
+
+            <!-- Category Breakdown Card -->
+            <div class="card" style="padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+              <h4 style="font-size:0.95rem; margin-bottom:8px; font-weight:700;">Uploads by Category</h4>
+              <div id="reportCategoryBars" role="region" aria-label="Category distribution chart" style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                <!-- Generated category breakdown dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail Records Subsection (TC_16, TC_29, TC_30) -->
+          <div class="subsection">
+            <div class="flex-between" style="margin-bottom:10px;">
+              <h3 style="font-size:1rem; font-weight:700;">Detailed Document Records (<span id="reportDetailsCount">0</span>)</h3>
+            </div>
+
+            <!-- Zero-Data Report State (TC_16) -->
+            <div id="reportEmptyState" class="empty-state hidden" style="padding:32px 16px; text-align:center;">
+              <div class="empty-state-icon" style="font-size:2rem; margin-bottom:6px;">📊</div>
+              <h4>No records found</h4>
+              <p style="color:#64748b; font-size:0.85rem;">No document records match the selected date range or category/status filters.</p>
+              <button type="button" class="btn btn-secondary btn-sm mt-2" id="btnEmptyResetReport">Clear All Filters</button>
+            </div>
+
+            <div class="documents-table-wrapper" id="reportTableWrapper">
+              <table class="documents-table" id="reportTable">
+                <thead>
+                  <tr>
+                    <th>Document ID</th>
+                    <th>Document Title</th>
+                    <th>Student Name</th>
+                    <th>Registration No.</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Upload Date</th>
+                    <th>Issuing Organization</th>
+                  </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                  <tr class="empty-row"><td colspan="8">Loading report records...</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>

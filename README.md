@@ -10,6 +10,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US06**: Secure Student Login & Student Dashboard
 - **User Story US07**: Admin User and Faculty Management
 - **User Story US08**: Document Search and Filtering
+- **User Story US09**: Student Document Dashboard & Reports Analytics
 
 ---
 
@@ -467,15 +468,67 @@ The application faithfully implements the Figma design specifications:
   - `US08_A03`: Faculty should not see documents belonging to students assigned to another Faculty Advisor
   - `US08_A04`: Faculty can filter documents by assigned student
 
+### 9. User Story US09 — Student Document Dashboard & Reports Analytics (47 Tests)
+- **Suite**: `tests/tc_us09_suite.test.js`
+- **Total Tests**: 47 passing tests (100% pass)
+- **Coverage**:
+  - `TC_01`: Verify analytics report page opens for authorized admin
+  - `TC_02`: Verify report access is restricted by role (Student gets 403 Forbidden)
+  - `TC_03`: Verify total document metric matches known dataset
+  - `TC_04`: Verify pending documents metric matches dataset
+  - `TC_05`: Verify approved documents metric matches dataset
+  - `TC_06`: Verify rejected documents metric matches dataset
+  - `TC_07`: Verify status metrics reconcile (pending + approved + rejected = total)
+  - `TC_08`: Verify report date range filter includes only records within selected range
+  - `TC_09`: Verify invalid report date range returns 400 validation error
+  - `TC_10`: Verify report filter reset restores default report scope
+  - `TC_11`: Verify analytics updates after new upload
+  - `TC_12`: Verify analytics updates after approval (pending decreases, approved increases)
+  - `TC_13`: Verify analytics updates after rejection (pending decreases, rejected increases)
+  - `TC_14`: Verify chart labels are readable and present in status distribution breakdown
+  - `TC_15`: Verify chart values correspond to summary metrics
+  - `TC_16`: Verify zero-data report state when no records match filter
+  - `TC_17`: Verify report generation loading state is present in markup
+  - `TC_18`: Verify report service error handling UI elements exist
+  - `TC_19`: Verify retry handler is registered in app.js
+  - `TC_20`: Verify export report to CSV returns valid CSV content
+  - `TC_21`: Verify export report to Excel returns valid workbook content
+  - `TC_22`: Verify export respects active filters
+  - `TC_23`: Verify export filename and format are valid
+  - `TC_24`: Verify report totals use consistent midnight time boundaries
+  - `TC_25`: Verify report uses correct status definitions
+  - `TC_26`: Verify report avoids duplicate counting for documents with review history
+  - `TC_27`: Verify reports can be filtered by category
+  - `TC_28`: Verify reports can be grouped by time period (monthly)
+  - `TC_29`: Verify report detail rows match source records
+  - `TC_30`: Verify report does not expose sensitive keys, passwords, or tokens
+  - `TC_31`: Verify analytics data is scoped to assigned advisor for faculty account
+  - `TC_32`: Verify large report with 500 records completes within performance target
+  - `TC_33`: Verify report layout supports mobile viewport with responsive flex/grid
+  - `TC_34`: Verify chart alternative text or accessible summary is present
+  - `TC_35`: Verify interactive controls have accessible labels and keyboard focusability
+  - `TC_36`: Verify report refresh multiple times maintains consistent totals without duplication
+  - `TC_37`: Verify report reflects concurrent status updates on refresh
+  - `TC_38`: Verify report filter combinations are applied together
+  - `TC_39`: Verify report metadata shows generation time ISO string
+  - `TC_40`: Verify report generation timestamp matches current system time within 5 seconds
+  - `US09_A01`: Student Dashboard displays basic student information
+  - `US09_A02`: Dashboard displays document statistics (Total, Pending, Approved, Rejected)
+  - `US09_A03`: Student can view complete document list and open individual document
+  - `US09_A04`: Student can view faculty comments
+  - `US09_A05`: Student can download approved documents
+  - `US09_A06`: Rejected documents provide an option to replace/resubmit
+  - `US09_A07`: Dashboard reflects status changes immediately after review
+
 ```
-ℹ tests 340 | suites 8 | pass 340 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 387 | suites 9 | pass 387 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 340 Tests
+### Run All 387 Tests
 ```bash
 npm test
 ```
@@ -490,6 +543,7 @@ npm run test:us05    # Runs 44 tests for US05
 npm run test:us06    # Runs 45 tests for US06
 npm run test:us07    # Runs 44 tests for US07
 npm run test:us08    # Runs 44 tests for US08
+npm run test:us09    # Runs 47 tests for US09
 ```
 
 ### Start Server

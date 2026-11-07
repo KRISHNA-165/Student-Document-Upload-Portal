@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test --test-concurrency=1 tests/tc_suite.test.js tests/tc_us02_suite.test.js tests/tc_us03_suite.test.js tests/tc_us04_suite.test.js tests/tc_us05_suite.test.js tests/tc_us06_suite.test.js tests/tc_us07_suite.test.js tests/tc_us08_suite.test.js",
+    "test": "node --test --test-concurrency=1 tests/tc_suite.test.js tests/tc_us02_suite.test.js tests/tc_us03_suite.test.js tests/tc_us04_suite.test.js tests/tc_us05_suite.test.js tests/tc_us06_suite.test.js tests/tc_us07_suite.test.js tests/tc_us08_suite.test.js tests/tc_us09_suite.test.js",
     "test:us01": "node --test tests/tc_suite.test.js",
     "test:us02": "node --test tests/tc_us02_suite.test.js",
     "test:us03": "node --test tests/tc_us03_suite.test.js",
@@ -13,7 +13,8 @@
     "test:us05": "node --test tests/tc_us05_suite.test.js",
     "test:us06": "node --test tests/tc_us06_suite.test.js",
     "test:us07": "node --test tests/tc_us07_suite.test.js",
-    "test:us08": "node --test tests/tc_us08_suite.test.js"
+    "test:us08": "node --test tests/tc_us08_suite.test.js",
+    "test:us09": "node --test tests/tc_us09_suite.test.js"
   },
   "keywords": [],
   "author": "",

@@ -104,9 +104,72 @@
       "role": "Admin"
     }
   ],
-  "documents": [],
-  "notifications": [],
-  "auditLogs": [],
-  "reviewHistory": [],
+  "documents": [
+    {
+      "id": "DOC-REP-1794023632036-79846",
+      "studentId": "STU-2024-001",
+      "studentName": "John Doe",
+      "title": "Sample Achievement Record",
+      "category": "Achievement",
+      "dateOfAchievement": "2024-04-15",
+      "issuingOrganization": "National Institute",
+      "status": "Approved",
+      "storageKey": "uploads/DOC-REP-1794023632036-79846.pdf",
+      "originalFilename": "report_doc.pdf",
+      "mimeType": "application/pdf",
+      "fileSize": 1024,
+      "assignedFacultyAdvisorId": "FAC-101",
+      "assignedFacultyAdvisorName": "Dr. Robert Smith",
+      "createdAt": "2026-11-07T03:53:52.036Z",
+      "updatedAt": "2026-11-07T03:53:52.037Z",
+      "lastReviewComment": "Approved immediately",
+      "lastReviewedAt": "2026-11-07T03:53:52.037Z",
+      "lastReviewedBy": "Dr. Robert Smith",
+      "lastReviewerId": "FAC-101"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "NOTIF-13bc5ff0-d8d4-4baa-8510-d021de25eb3c",
+      "recipientId": "STU-2024-001",
+      "senderId": "FAC-101",
+      "documentId": "DOC-REP-1794023632036-79846",
+      "documentTitle": "Sample Achievement Record",
+      "title": "Document Approved",
+      "message": "Your document \"Sample Achievement Record\" has been approved by Dr. Robert Smith. Feedback: \"Approved immediately\"",
+      "read": false,
+      "createdAt": "2026-11-07T03:53:52.037Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "AUDIT-be07de59-91eb-4001-bca3-8d2b45be00ed",
+      "action": "DOCUMENT_APPROVED",
+      "actorId": "FAC-101",
+      "actorRole": "Faculty",
+      "targetId": "DOC-REP-1794023632036-79846",
+      "details": {
+        "decision": "Approved",
+        "studentId": "STU-2024-001",
+        "comment": "Approved immediately"
+      },
+      "timestamp": "2026-11-07T03:53:52.037Z"
+    }
+  ],
+  "reviewHistory": [
+    {
+      "id": "REV-6b533bc5-c363-4c76-86d0-bc6b204cf522",
+      "documentId": "DOC-REP-1794023632036-79846",
+      "documentTitle": "Sample Achievement Record",
+      "studentId": "STU-2024-001",
+      "studentName": "John Doe",
+      "reviewerId": "FAC-101",
+      "reviewerName": "Dr. Robert Smith",
+      "reviewerRole": "Faculty",
+      "action": "Approved",
+      "comments": "Approved immediately",
+      "timestamp": "2026-11-07T03:53:52.037Z"
+    }
+  ],
   "sessions": []
 }

@@ -909,3 +909,4 @@ describe('US08 - Document Search and Filtering (TC_01 to TC_40)', () => {
     assert.strictEqual(res.json.documents[0].title, 'John Document');
   });
 });
+
