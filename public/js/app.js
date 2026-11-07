@@ -327,6 +327,39 @@ function setupEventListeners() {
   document.getElementById('btnRefreshFaculty').addEventListener('click', loadFacultyData);
   document.getElementById('btnRefreshAudit').addEventListener('click', loadAuditLogs);
 
+  // Reports & Analytics Controls (US09)
+  const btnRefreshReport = document.getElementById('btnRefreshReport');
+  const btnExportCSV = document.getElementById('btnExportCSV');
+  const btnExportExcel = document.getElementById('btnExportExcel');
+  const btnResetReportFilters = document.getElementById('btnResetReportFilters');
+  const btnEmptyResetReport = document.getElementById('btnEmptyResetReport');
+  const btnRetryReport = document.getElementById('btnRetryReport');
+  const reportCategoryFilter = document.getElementById('reportCategoryFilter');
+  const reportStatusFilter = document.getElementById('reportStatusFilter');
+  const reportStartDate = document.getElementById('reportStartDate');
+  const reportEndDate = document.getElementById('reportEndDate');
+
+  if (btnRefreshReport) btnRefreshReport.addEventListener('click', loadReportsData);
+  if (btnExportCSV) btnExportCSV.addEventListener('click', () => exportReport('csv'));
+  if (btnExportExcel) btnExportExcel.addEventListener('click', () => exportReport('excel'));
+  if (reportCategoryFilter) reportCategoryFilter.addEventListener('change', loadReportsData);
+  if (reportStatusFilter) reportStatusFilter.addEventListener('change', loadReportsData);
+  if (reportStartDate) reportStartDate.addEventListener('change', loadReportsData);
+  if (reportEndDate) reportEndDate.addEventListener('change', loadReportsData);
+
+  function resetReportFilters() {
+    if (reportStartDate) reportStartDate.value = '';
+    if (reportEndDate) reportEndDate.value = '';
+    if (reportCategoryFilter) reportCategoryFilter.value = 'ALL';
+    if (reportStatusFilter) reportStatusFilter.value = 'ALL';
+    const dateErrorEl = document.getElementById('reportDateError');
+    if (dateErrorEl) dateErrorEl.classList.add('hidden');
+    loadReportsData();
+  }
+  if (btnResetReportFilters) btnResetReportFilters.addEventListener('click', resetReportFilters);
+  if (btnEmptyResetReport) btnEmptyResetReport.addEventListener('click', resetReportFilters);
+  if (btnRetryReport) btnRetryReport.addEventListener('click', loadReportsData);
+
   // Student Document Filters (US08: TC_01 - TC_40)
   const studentSearchInput = document.getElementById('studentSearchInput');
   const studentCategoryFilter = document.getElementById('studentCategoryFilter');
@@ -1454,6 +1487,165 @@ async function loadAuditLogs() {
 }
 
 // -------------------------------------------------------------
+// Reports & Analytics (US09: TC_01 - TC_40)
+// -------------------------------------------------------------
+async function loadReportsData() {
+  const loadingEl = document.getElementById('reportLoadingState');
+  const errorEl = document.getElementById('reportErrorState');
+  const errorMsgEl = document.getElementById('reportErrorMessage');
+  const dateErrorEl = document.getElementById('reportDateError');
+  const generatedTimeEl = document.getElementById('reportGeneratedTime');
+  const startEl = document.getElementById('reportStartDate');
+  const endEl = document.getElementById('reportEndDate');
+  const categoryEl = document.getElementById('reportCategoryFilter');
+  const statusEl = document.getElementById('reportStatusFilter');
+  const tableWrapper = document.getElementById('reportTableWrapper');
+  const emptyState = document.getElementById('reportEmptyState');
+  const tableBody = document.getElementById('reportTableBody');
+
+  if (errorEl) errorEl.classList.add('hidden');
+
+  const startDate = startEl ? startEl.value : '';
+  const endDate = endEl ? endEl.value : '';
+
+  // Date range validation (TC_09)
+  if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    if (dateErrorEl) dateErrorEl.classList.remove('hidden');
+    return;
+  } else {
+    if (dateErrorEl) dateErrorEl.classList.add('hidden');
+  }
+
+  if (loadingEl) loadingEl.classList.remove('hidden');
+
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.set('from', startDate);
+    if (endDate) params.set('to', endDate);
+    if (categoryEl && categoryEl.value !== 'ALL') params.set('category', categoryEl.value);
+    if (statusEl && statusEl.value !== 'ALL') params.set('status', statusEl.value);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`/api/reports${queryStr}`);
+    const data = await res.json();
+
+    if (loadingEl) loadingEl.classList.add('hidden');
+
+    if (!res.ok) throw new Error(data.message || 'Failed to generate report');
+
+    // Update generation timestamp (TC_39, TC_40)
+    if (generatedTimeEl) {
+      const genDate = new Date(data.generatedAt);
+      generatedTimeEl.textContent = `Generated: ${genDate.toLocaleTimeString()}`;
+    }
+
+    // Update summary metric cards (TC_03 - TC_07)
+    const metrics = data.metrics || {};
+    const totalDocsEl = document.getElementById('reportTotalDocs');
+    const pendingDocsEl = document.getElementById('reportPendingDocs');
+    const approvedDocsEl = document.getElementById('reportApprovedDocs');
+    const rejectedDocsEl = document.getElementById('reportRejectedDocs');
+    const approvalRateEl = document.getElementById('reportApprovalRate');
+
+    if (totalDocsEl) totalDocsEl.textContent = metrics.totalDocuments || 0;
+    if (pendingDocsEl) pendingDocsEl.textContent = metrics.pendingDocuments || 0;
+    if (approvedDocsEl) approvedDocsEl.textContent = metrics.approvedDocuments || 0;
+    if (rejectedDocsEl) rejectedDocsEl.textContent = metrics.rejectedDocuments || 0;
+    if (approvalRateEl) approvalRateEl.textContent = `${metrics.approvalRatePercentage || 0}%`;
+
+    // Visual Distribution Charts (TC_14, TC_15, TC_34)
+    const statusBarsEl = document.getElementById('reportStatusBars');
+    const chartSummaryEl = document.getElementById('reportChartSummary');
+    const charts = data.charts || {};
+
+    if (chartSummaryEl) {
+      chartSummaryEl.textContent = `Pending: ${metrics.pendingDocuments || 0}, Approved: ${metrics.approvedDocuments || 0}, Rejected: ${metrics.rejectedDocuments || 0}`;
+    }
+
+    if (statusBarsEl && charts.statusDistribution) {
+      statusBarsEl.innerHTML = charts.statusDistribution.map(s => `
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+            <span><strong>${escapeHtml(s.status)}</strong></span>
+            <span>${s.count} (${s.percentage}%)</span>
+          </div>
+          <div style="background:#e2e8f0; border-radius:9999px; height:8px; overflow:hidden;">
+            <div style="background:${s.color}; width:${s.percentage}%; height:100%; border-radius:9999px;"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const categoryBarsEl = document.getElementById('reportCategoryBars');
+    if (categoryBarsEl && charts.categoryDistribution) {
+      categoryBarsEl.innerHTML = charts.categoryDistribution.map(c => `
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding:4px 0; border-bottom:1px solid #f1f5f9;">
+          <span class="badge">${escapeHtml(c.category)}</span>
+          <span style="font-weight:600; color:#334155;">${c.count} records (${c.percentage}%)</span>
+        </div>
+      `).join('') || '<p style="color:#94a3b8; font-size:0.8rem;">No categories recorded.</p>';
+    }
+
+    // Detail rows (TC_16, TC_29, TC_30)
+    const details = data.details || [];
+    const detailsCountEl = document.getElementById('reportDetailsCount');
+    if (detailsCountEl) detailsCountEl.textContent = details.length;
+
+    if (details.length === 0) {
+      if (tableWrapper) tableWrapper.classList.add('hidden');
+      if (emptyState) emptyState.classList.remove('hidden');
+      if (tableBody) tableBody.innerHTML = '';
+      return;
+    }
+
+    if (tableWrapper) tableWrapper.classList.remove('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
+
+    if (tableBody) {
+      tableBody.innerHTML = details.map(d => {
+        const statusClass = d.status === 'Pending Approval' ? 'status-pending' : (d.status === 'Approved' ? 'status-approved' : 'status-rejected');
+        return `
+          <tr>
+            <td><code>${escapeHtml(d.id)}</code></td>
+            <td><strong>${escapeHtml(d.title)}</strong></td>
+            <td>${escapeHtml(d.studentName)}</td>
+            <td><code>${escapeHtml(d.registrationNumber)}</code></td>
+            <td><span class="badge">${escapeHtml(d.category)}</span></td>
+            <td><span class="status-badge ${statusClass}">${escapeHtml(d.status)}</span></td>
+            <td>${d.uploadDate ? new Date(d.uploadDate).toLocaleDateString() : ''}</td>
+            <td>${escapeHtml(d.issuingOrganization || '-')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      if (errorMsgEl) errorMsgEl.textContent = err.message || 'Error loading report';
+    } else {
+      showAlert(err.message, 'danger');
+    }
+  }
+}
+
+function exportReport(format) {
+  const startEl = document.getElementById('reportStartDate');
+  const endEl = document.getElementById('reportEndDate');
+  const categoryEl = document.getElementById('reportCategoryFilter');
+  const statusEl = document.getElementById('reportStatusFilter');
+
+  const params = new URLSearchParams();
+  params.set('format', format);
+  if (startEl && startEl.value) params.set('from', startEl.value);
+  if (endEl && endEl.value) params.set('to', endEl.value);
+  if (categoryEl && categoryEl.value !== 'ALL') params.set('category', categoryEl.value);
+  if (statusEl && statusEl.value !== 'ALL') params.set('status', statusEl.value);
+
+  window.location.href = `/api/reports/export?${params.toString()}`;
+}
+
+// -------------------------------------------------------------
 // User / Persona Management
 // -------------------------------------------------------------
 async function loadCurrentUser() {
@@ -1516,6 +1708,7 @@ function renderCurrentUser() {
   const tabUploadBtn = document.getElementById('tabUploadBtn');
   const tabDocumentsBtn = document.getElementById('tabDocumentsBtn');
   const tabNotificationsBtn = document.getElementById('tabNotificationsBtn');
+  const tabReportsBtn = document.getElementById('tabReportsBtn');
 
   // Role-Based Control & Tab Isolation (TC_02, TC_38, TC_40)
   if (currentUser.role === 'Student') {
@@ -1528,12 +1721,14 @@ function renderCurrentUser() {
     if (tabFacultyBtn) tabFacultyBtn.classList.add('hidden');
     if (tabAdminUsersBtn) tabAdminUsersBtn.classList.add('hidden');
     if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
+    if (tabReportsBtn) tabReportsBtn.classList.add('hidden'); // TC_02
   } else if (currentUser.role === 'Faculty') {
     advisorBanner.classList.add('hidden');
     if (tabDashboardBtn) tabDashboardBtn.classList.add('hidden');
     if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
     if (tabAdminUsersBtn) tabAdminUsersBtn.classList.add('hidden');
     if (tabAuditBtn) tabAuditBtn.classList.add('hidden');
+    if (tabReportsBtn) tabReportsBtn.classList.remove('hidden');
   } else {
     // Administrator
     advisorBanner.classList.add('hidden');
@@ -1542,6 +1737,7 @@ function renderCurrentUser() {
     if (tabFacultyBtn) tabFacultyBtn.classList.remove('hidden');
     if (tabAdminUsersBtn) tabAdminUsersBtn.classList.remove('hidden');
     if (tabAuditBtn) tabAuditBtn.classList.remove('hidden');
+    if (tabReportsBtn) tabReportsBtn.classList.remove('hidden');
   }
 }
 
@@ -1564,6 +1760,7 @@ function switchTab(tabId) {
   if (tabId === 'facultyTab') loadFacultyData();
   if (tabId === 'adminUsersTab') loadAdminUsers();
   if (tabId === 'auditTab') loadAuditLogs();
+  if (tabId === 'reportsTab') loadReportsData();
 }
 
 async function refreshAllData() {
@@ -1573,7 +1770,8 @@ async function refreshAllData() {
     loadStudentNotifications(),
     loadFacultyData(),
     loadAdminUsers(),
-    loadAuditLogs()
+    loadAuditLogs(),
+    loadReportsData()
   ]);
 }
 

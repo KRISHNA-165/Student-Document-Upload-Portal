@@ -14,7 +14,13 @@ router.get('/dashboard', requireAuth, requireRole('Student'), (req, res) => {
     const dashboardData = authService.getStudentDashboardData(req.user.id);
     return res.status(200).json({
       success: true,
-      ...dashboardData
+      ...dashboardData,
+      metrics: {
+        totalDocuments: dashboardData.counts ? dashboardData.counts.total : 0,
+        pendingApproval: dashboardData.counts ? dashboardData.counts.pending : 0,
+        approved: dashboardData.counts ? dashboardData.counts.approved : 0,
+        rejected: dashboardData.counts ? dashboardData.counts.rejected : 0
+      }
     });
   } catch (err) {
     const statusCode = err.statusCode || 500;
