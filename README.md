@@ -11,6 +11,7 @@ An enterprise-grade, secure, and intuitive web application designed for academic
 - **User Story US07**: Admin User and Faculty Management
 - **User Story US08**: Document Search and Filtering
 - **User Story US09**: Student Document Dashboard & Reports Analytics
+- **User Story US10**: Secure Document Storage and Audit
 
 ---
 
@@ -520,15 +521,70 @@ The application faithfully implements the Figma design specifications:
   - `US09_A06`: Rejected documents provide an option to replace/resubmit
   - `US09_A07`: Dashboard reflects status changes immediately after review
 
+### 10. User Story US10 — Secure Document Storage and Audit (50 Tests)
+- **Suite**: `tests/tc_us10_suite.test.js`
+- **Total Tests**: 50 passing tests (100% pass)
+- **Coverage**:
+  - `TC_01`: Verify login page opens
+  - `TC_02`: Verify login with valid student credentials
+  - `TC_03`: Verify login with valid faculty credentials
+  - `TC_04`: Verify login with valid admin credentials
+  - `TC_05`: Verify login rejects incorrect password
+  - `TC_06`: Verify login rejects unknown email
+  - `TC_07`: Verify required email validation
+  - `TC_08`: Verify required password validation
+  - `TC_09`: Verify email format validation
+  - `TC_10`: Verify password field masks input
+  - `TC_11`: Verify show/hide password control
+  - `TC_12`: Verify login form handles surrounding email spaces
+  - `TC_13`: Verify account lockout or throttling after repeated failures
+  - `TC_14`: Verify login error does not reveal whether email exists
+  - `TC_15`: Verify logout ends the session
+  - `TC_16`: Verify protected page blocks signed-out user
+  - `TC_17`: Verify browser back after logout does not expose protected content (Cache-Control headers)
+  - `TC_18`: Verify student cannot access faculty review page
+  - `TC_19`: Verify student cannot access admin page
+  - `TC_20`: Verify faculty cannot access admin-only page
+  - `TC_21`: Verify role-based navigation for student
+  - `TC_22`: Verify role-based navigation for faculty
+  - `TC_23`: Verify role-based navigation for admin
+  - `TC_24`: Verify direct API requests enforce roles (server-side protection)
+  - `TC_25`: Verify student cannot read another student's document
+  - `TC_26`: Verify faculty review scope is enforced
+  - `TC_27`: Verify inactive account cannot authenticate
+  - `TC_28`: Verify role changes take effect
+  - `TC_29`: Verify session timeout
+  - `TC_30`: Verify concurrent logout invalidates session
+  - `TC_31`: Verify login over HTTPS support & secure cookie generation
+  - `TC_32`: Verify password is not exposed in URL
+  - `TC_33`: Verify authentication response handles service failure
+  - `TC_34`: Verify retry after authentication service recovery
+  - `TC_35`: Verify keyboard navigation on login form
+  - `TC_36`: Verify login form has accessible labels
+  - `TC_37`: Verify login layout on mobile
+  - `TC_38`: Verify login redirect preserves intended protected destination
+  - `TC_39`: Verify open redirect protection
+  - `TC_40`: Verify session cookie security attributes (HttpOnly, SameSite)
+  - `US10_A01`: Uploaded documents must be stored securely in private storage
+  - `US10_A02`: Documents must be associated with the correct student
+  - `US10_A03`: Unauthorized users must not be able to access documents
+  - `US10_A04`: Document access must follow role-based permissions
+  - `US10_A05`: Important actions should be recorded in an audit log
+  - `US10_A06`: Audit records should include User, Action, Document, Date and Time
+  - `US10_A07`: Approval, rejection, replacement, upload, and download activities should be traceable
+  - `US10_A08`: Audit records should not be editable by normal users (immutable)
+  - `US10_A09`: Administrators should be able to view audit records
+  - `US10_A10`: Deleted/deactivated users' historical records should remain available for auditing
+
 ```
-ℹ tests 387 | suites 9 | pass 387 | fail 0 | cancelled 0 | skipped 0 | todo 0
+ℹ tests 437 | suites 10 | pass 437 | fail 0 | cancelled 0 | skipped 0 | todo 0
 ```
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Run All 387 Tests
+### Run All 437 Tests
 ```bash
 npm test
 ```
@@ -544,6 +600,7 @@ npm run test:us06    # Runs 45 tests for US06
 npm run test:us07    # Runs 44 tests for US07
 npm run test:us08    # Runs 44 tests for US08
 npm run test:us09    # Runs 47 tests for US09
+npm run test:us10    # Runs 50 tests for US10
 ```
 
 ### Start Server

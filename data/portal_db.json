@@ -1,6 +1,14 @@
 {
   "users": [
     {
+      "id": "STU-DEACTIVATED-01",
+      "name": "Deactivated Student",
+      "email": "deactivated@university.edu",
+      "role": "Student",
+      "status": "Disabled",
+      "updatedAt": "2026-11-07T04:20:38.140Z"
+    },
+    {
       "id": "STU-2024-001",
       "name": "John Doe",
       "email": "john.doe@university.edu",
@@ -106,70 +114,32 @@
   ],
   "documents": [
     {
-      "id": "DOC-REP-1794023632036-79846",
-      "studentId": "STU-2024-001",
-      "studentName": "John Doe",
-      "title": "Sample Achievement Record",
+      "id": "DOC-HISTORICAL-01",
+      "studentId": "STU-DEACTIVATED-01",
+      "title": "Historical Document",
       "category": "Achievement",
-      "dateOfAchievement": "2024-04-15",
-      "issuingOrganization": "National Institute",
       "status": "Approved",
-      "storageKey": "uploads/DOC-REP-1794023632036-79846.pdf",
-      "originalFilename": "report_doc.pdf",
-      "mimeType": "application/pdf",
-      "fileSize": 1024,
-      "assignedFacultyAdvisorId": "FAC-101",
-      "assignedFacultyAdvisorName": "Dr. Robert Smith",
-      "createdAt": "2026-11-07T03:53:52.036Z",
-      "updatedAt": "2026-11-07T03:53:52.037Z",
-      "lastReviewComment": "Approved immediately",
-      "lastReviewedAt": "2026-11-07T03:53:52.037Z",
-      "lastReviewedBy": "Dr. Robert Smith",
-      "lastReviewerId": "FAC-101"
+      "createdAt": "2026-11-07T04:20:38.140Z"
     }
   ],
-  "notifications": [
-    {
-      "id": "NOTIF-13bc5ff0-d8d4-4baa-8510-d021de25eb3c",
-      "recipientId": "STU-2024-001",
-      "senderId": "FAC-101",
-      "documentId": "DOC-REP-1794023632036-79846",
-      "documentTitle": "Sample Achievement Record",
-      "title": "Document Approved",
-      "message": "Your document \"Sample Achievement Record\" has been approved by Dr. Robert Smith. Feedback: \"Approved immediately\"",
-      "read": false,
-      "createdAt": "2026-11-07T03:53:52.037Z"
-    }
-  ],
+  "notifications": [],
   "auditLogs": [
     {
-      "id": "AUDIT-be07de59-91eb-4001-bca3-8d2b45be00ed",
-      "action": "DOCUMENT_APPROVED",
-      "actorId": "FAC-101",
-      "actorRole": "Faculty",
-      "targetId": "DOC-REP-1794023632036-79846",
+      "id": "AUDIT-e4efcc4b-91ce-4459-a22f-3f52d22b2e33",
+      "action": "DOCUMENT_UPLOAD",
+      "actorId": "STU-DEACTIVATED-01",
+      "actorName": "Deactivated Student",
+      "actorRole": "Student",
+      "targetId": "DOC-HISTORICAL-01",
+      "documentId": "DOC-HISTORICAL-01",
       "details": {
-        "decision": "Approved",
-        "studentId": "STU-2024-001",
-        "comment": "Approved immediately"
+        "title": "Historical Document"
       },
-      "timestamp": "2026-11-07T03:53:52.037Z"
+      "ip": null,
+      "userAgent": null,
+      "timestamp": "2026-11-07T04:20:38.140Z"
     }
   ],
-  "reviewHistory": [
-    {
-      "id": "REV-6b533bc5-c363-4c76-86d0-bc6b204cf522",
-      "documentId": "DOC-REP-1794023632036-79846",
-      "documentTitle": "Sample Achievement Record",
-      "studentId": "STU-2024-001",
-      "studentName": "John Doe",
-      "reviewerId": "FAC-101",
-      "reviewerName": "Dr. Robert Smith",
-      "reviewerRole": "Faculty",
-      "action": "Approved",
-      "comments": "Approved immediately",
-      "timestamp": "2026-11-07T03:53:52.037Z"
-    }
-  ],
+  "reviewHistory": [],
   "sessions": []
 }

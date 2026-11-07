@@ -16,6 +16,35 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Cookie parser helper (TC_40)
+app.use((req, res, next) => {
+  const cookieHeader = req.headers.cookie;
+  req.cookies = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(c => {
+      const parts = c.split('=');
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        const val = parts.slice(1).join('=').trim();
+        try {
+          req.cookies[key] = decodeURIComponent(val);
+        } catch {
+          req.cookies[key] = val;
+        }
+      }
+    });
+  }
+  next();
+});
+
+// Cache control headers preventing exposure via browser history/back (TC_17)
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // Serve frontend static assets
 app.use(express.static(path.resolve(__dirname, '../public')));
 

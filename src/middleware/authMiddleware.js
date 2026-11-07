@@ -26,6 +26,8 @@ function authMiddleware(req, res, next) {
     token = authHeader.substring(7).trim();
   } else if (req.headers['x-session-token']) {
     token = req.headers['x-session-token'];
+  } else if (req.cookies && req.cookies['af_session']) {
+    token = req.cookies['af_session'];
   }
 
   // Support test headers for simulating custom timeout or inactivity

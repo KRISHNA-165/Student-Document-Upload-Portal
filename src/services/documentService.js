@@ -270,9 +270,22 @@ class DocumentService {
       throw err;
     }
 
-    // Authorization check
+    if (!user) {
+      const err = new Error('Authentication required');
+      err.statusCode = 401;
+      throw err;
+    }
+
+    // Authorization check - Student can only access their own documents (TC_25)
     if (user.role === 'Student' && doc.studentId !== user.id) {
       const err = new Error('Access denied: You can only access your own documents');
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // Authorization check - Faculty can only access documents for their assigned students (TC_26)
+    if (user.role === 'Faculty' && doc.assignedFacultyAdvisorId && doc.assignedFacultyAdvisorId !== user.id) {
+      const err = new Error('Access denied: You are not the assigned advisor for this student document');
       err.statusCode = 403;
       throw err;
     }

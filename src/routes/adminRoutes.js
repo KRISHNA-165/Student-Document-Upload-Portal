@@ -132,4 +132,44 @@ router.put('/students/:studentId/advisor', (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/audit-events - View system audit trail with filtering and pagination (US10 Architecture & AC 9)
+ */
+router.get('/audit-events', (req, res) => {
+  try {
+    const auditService = require('../services/auditService');
+    const result = auditService.queryLogs(req.query);
+    return res.status(200).json({
+      success: true,
+      ...result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Error retrieving audit events'
+    });
+  }
+});
+
+/**
+ * GET /api/admin/audit-events/document/:documentId - Trace document audit trail (US10 AC 7)
+ */
+router.get('/audit-events/document/:documentId', (req, res) => {
+  try {
+    const auditService = require('../services/auditService');
+    const trail = auditService.getAuditTrailForDocument(req.params.documentId);
+    return res.status(200).json({
+      success: true,
+      documentId: req.params.documentId,
+      count: trail.length,
+      trail
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Error retrieving document audit trail'
+    });
+  }
+});
+
 module.exports = router;

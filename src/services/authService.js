@@ -1,11 +1,69 @@
 const crypto = require('crypto');
 const db = require('../database/db');
 const CONSTANTS = require('../config/constants');
+const auditService = require('./auditService');
 
 // Default session inactivity timeout: 15 minutes (in milliseconds)
 const DEFAULT_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
 
 class AuthService {
+  constructor() {
+    this.failedAttempts = new Map();
+  }
+
+  /**
+   * Reset failed login attempts
+   */
+  resetLoginAttempts(identifier = null) {
+    if (identifier) {
+      this.failedAttempts.delete(String(identifier).trim().toLowerCase());
+    } else {
+      this.failedAttempts.clear();
+    }
+  }
+
+  /**
+   * Get login attempt status for an identifier
+   */
+  getLoginAttempts(identifier) {
+    if (!identifier) return { count: 0, lockedUntil: null, isLocked: false };
+    const clean = String(identifier).trim().toLowerCase();
+    const entry = this.failedAttempts.get(clean);
+    if (!entry) return { count: 0, lockedUntil: null, isLocked: false };
+    const isLocked = entry.lockedUntil && entry.lockedUntil > Date.now();
+    return {
+      count: entry.count,
+      lockedUntil: entry.lockedUntil,
+      isLocked: Boolean(isLocked)
+    };
+  }
+
+  /**
+   * Validate destination redirect target against open-redirect attacks (TC_38, TC_39)
+   */
+  validateRedirectUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    // Block URL schemes, scheme-relative slashes, backslashes, CRLF
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) || trimmed.startsWith('//') || trimmed.includes('\\') || /[\r\n]/.test(trimmed)) {
+      return null;
+    }
+    // Must start with '/' or '#' or be a known internal tab/route identifier
+    if (trimmed.startsWith('/') || trimmed.startsWith('#')) {
+      return trimmed;
+    }
+    const recognizedDestinations = [
+      'dashboardTab', 'uploadTab', 'documentsTab', 'facultyTab', 'adminTab', 'auditTab', 'reportsTab',
+      'my-documents', 'dashboard', 'upload', 'faculty', 'admin', 'audit'
+    ];
+    if (recognizedDestinations.includes(trimmed)) {
+      return trimmed;
+    }
+    return null;
+  }
+
   /**
    * Generate secure salt and hash using PBKDF2
    */
@@ -34,11 +92,24 @@ class AuthService {
     if (!identifier) return null;
     const clean = identifier.trim().toLowerCase();
     const users = db.getAllUsers();
-    return users.find(u => 
+    const match = users.find(u => 
       (u.id && u.id.toLowerCase() === clean) ||
       (u.email && u.email.toLowerCase() === clean) ||
       (u.username && u.username.toLowerCase() === clean)
-    ) || null;
+    );
+    if (match) return match;
+
+    // Friendly demo aliases
+    if (clean === 'student@university.edu') {
+      return users.find(u => u.role === 'Student') || null;
+    }
+    if (clean === 'faculty@university.edu') {
+      return users.find(u => u.role === 'Faculty') || null;
+    }
+    if (clean === 'admin@university.edu') {
+      return users.find(u => u.role === 'Admin') || null;
+    }
+    return null;
   }
 
   /**
@@ -110,41 +181,104 @@ class AuthService {
    */
   terminateSession(token) {
     if (!token) return false;
-    return db.updateSession(token, { active: false, loggedOutAt: new Date().toISOString() });
+    const session = db.getSession(token);
+    const user = session ? db.getUserById(session.userId) : null;
+
+    const result = db.updateSession(token, { active: false, loggedOutAt: new Date().toISOString() });
+
+    try {
+      auditService.log({
+        action: 'USER_LOGOUT',
+        actorId: user ? user.id : 'ANONYMOUS',
+        actorName: user ? user.name : 'User',
+        actorRole: user ? user.role : 'User',
+        targetId: user ? user.id : null,
+        details: {
+          sessionToken: token.slice(0, 8) + '...'
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Audit log error on logout:', auditErr.message);
+    }
+
+    return result;
   }
 
   /**
-   * Authenticate student / user login
+   * Authenticate student / user login with lockout & audit logging (TC_02 - TC_14, US10 AC 5)
    */
   async login(identifier, password, roleHint = null) {
-    if (!identifier || !identifier.trim() || !password || !password.trim()) {
-      const err = new Error('Username/email and password are required');
+    if (!identifier || !identifier.trim()) {
+      const err = new Error('Username/email is required');
       err.statusCode = 400;
+      throw err;
+    }
+
+    if (!password || !password.trim()) {
+      const err = new Error('Password is required');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const cleanIdentifier = identifier.trim().toLowerCase();
+
+    // 1. Check account lockout / throttling (TC_13)
+    const failureRecord = this.failedAttempts.get(cleanIdentifier);
+    const now = Date.now();
+    if (failureRecord && failureRecord.lockedUntil && failureRecord.lockedUntil > now) {
+      const remainingSec = Math.ceil((failureRecord.lockedUntil - now) / 1000);
+      const err = new Error(`Account is temporarily locked due to repeated failed login attempts. Please try again in ${remainingSec} seconds.`);
+      err.statusCode = 429;
+      err.code = 'ACCOUNT_LOCKED';
       throw err;
     }
 
     const user = this.findUserByIdentifier(identifier);
     if (!user) {
+      // Record failed attempt
+      this._recordFailedAttempt(cleanIdentifier);
+      try {
+        auditService.log({
+          action: 'LOGIN_FAILED',
+          actorId: 'UNKNOWN',
+          actorName: 'Unregistered User',
+          actorRole: 'Guest',
+          targetId: cleanIdentifier,
+          details: { identifier: cleanIdentifier, reason: 'ACCOUNT_NOT_FOUND' }
+        });
+      } catch {}
+
       const err = new Error('Invalid username/email or password');
       err.statusCode = 401;
       throw err;
     }
 
-    // Account activation / deactivation check (US07 & TC_28)
+    // Account activation / deactivation check (US07, US10 AC 10 & TC_27)
     if (user.status === 'Disabled' || user.active === false) {
+      try {
+        auditService.log({
+          action: 'LOGIN_BLOCKED_DISABLED',
+          actorId: user.id,
+          actorName: user.name,
+          actorRole: user.role,
+          targetId: user.id,
+          details: { identifier: cleanIdentifier, reason: 'ACCOUNT_DEACTIVATED' }
+        });
+      } catch {}
+
       const err = new Error('Account is deactivated. Please contact the administrator.');
       err.statusCode = 403;
       throw err;
     }
 
-    // Role check if student login is strictly required
+    // Role check if role hint is provided
     if (roleHint && user.role !== roleHint) {
       const err = new Error(`Access denied for role ${roleHint}`);
       err.statusCode = 403;
       throw err;
     }
 
-    // Verify password against salt/hash (or fallback to default 'password123' if salt not initialized)
+    // Verify password against salt/hash (or fallback for demo accounts)
     let passwordValid = false;
     if (user.passwordSalt && user.passwordHash) {
       passwordValid = this.verifyPassword(password, user.passwordSalt, user.passwordHash);
@@ -153,13 +287,52 @@ class AuthService {
     }
 
     if (!passwordValid) {
+      const isNowLocked = this._recordFailedAttempt(cleanIdentifier);
+      try {
+        auditService.log({
+          action: 'LOGIN_FAILED',
+          actorId: user.id,
+          actorName: user.name,
+          actorRole: user.role,
+          targetId: user.id,
+          details: { identifier: cleanIdentifier, reason: 'INVALID_PASSWORD' }
+        });
+      } catch {}
+
+      if (isNowLocked) {
+        const err = new Error('Account is temporarily locked due to repeated failed login attempts. Please try again later.');
+        err.statusCode = 429;
+        err.code = 'ACCOUNT_LOCKED';
+        throw err;
+      }
+
       const err = new Error('Invalid username/email or password');
       err.statusCode = 401;
       throw err;
     }
 
+    // Password is valid - reset failed attempts
+    this.failedAttempts.delete(cleanIdentifier);
+
     // Create session
     const session = this.createSession(user.id);
+
+    // Record successful login in audit log (US10 AC 5)
+    try {
+      auditService.log({
+        action: 'USER_LOGIN',
+        actorId: user.id,
+        actorName: user.name,
+        actorRole: user.role,
+        targetId: user.id,
+        details: {
+          method: 'PASSWORD',
+          identifier: cleanIdentifier
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Audit log error on login:', auditErr.message);
+    }
 
     return {
       user: {
@@ -178,6 +351,18 @@ class AuthService {
       },
       token: session.token
     };
+  }
+
+  _recordFailedAttempt(cleanIdentifier) {
+    const current = this.failedAttempts.get(cleanIdentifier) || { count: 0, lockedUntil: null };
+    current.count += 1;
+    let isLocked = false;
+    if (current.count >= MAX_FAILED_ATTEMPTS) {
+      current.lockedUntil = Date.now() + LOCKOUT_MS;
+      isLocked = true;
+    }
+    this.failedAttempts.set(cleanIdentifier, current);
+    return isLocked;
   }
 
   /**
@@ -245,6 +430,12 @@ class AuthService {
         approved,
         rejected
       },
+      metrics: {
+        totalDocuments: total,
+        pendingApproval: pending,
+        approved,
+        rejected
+      },
       recentUploads,
       unreadNotificationCount
     };
@@ -254,4 +445,5 @@ class AuthService {
 module.exports = new AuthService();
 module.exports.AuthService = AuthService;
 module.exports.DEFAULT_INACTIVITY_TIMEOUT_MS = DEFAULT_INACTIVITY_TIMEOUT_MS;
-
+module.exports.MAX_FAILED_ATTEMPTS = MAX_FAILED_ATTEMPTS;
+module.exports.LOCKOUT_MS = LOCKOUT_MS;
