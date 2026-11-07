@@ -3,6 +3,7 @@ const multer = require('multer');
 const CONSTANTS = require('../config/constants');
 const documentService = require('../services/documentService');
 const reviewService = require('../services/reviewService');
+const auditService = require('../services/auditService');
 const db = require('../database/db');
 const { requireRole } = require('../middleware/authMiddleware');
 
@@ -142,10 +143,29 @@ router.get('/:id', (req, res) => {
  */
 router.get('/:id/download', (req, res) => {
   try {
-    const { filePath, originalFilename, mimeType } = documentService.getAuthorizedFile(
+    const { filePath, originalFilename, mimeType, document: doc } = documentService.getAuthorizedFile(
       req.params.id,
       req.user
     );
+
+    try {
+      auditService.log({
+        action: 'DOCUMENT_DOWNLOAD',
+        actorId: req.user ? req.user.id : 'ANONYMOUS',
+        actorName: req.user ? req.user.name : 'User',
+        actorRole: req.user ? req.user.role : 'User',
+        targetId: doc.id,
+        documentId: doc.id,
+        details: {
+          title: doc.title,
+          originalFilename,
+          mimeType,
+          studentId: doc.studentId
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Audit download error:', auditErr.message);
+    }
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalFilename)}"`);
@@ -163,10 +183,29 @@ router.get('/:id/download', (req, res) => {
  */
 router.get('/:id/view', (req, res) => {
   try {
-    const { filePath, originalFilename, mimeType } = documentService.getAuthorizedFile(
+    const { filePath, originalFilename, mimeType, document: doc } = documentService.getAuthorizedFile(
       req.params.id,
       req.user
     );
+
+    try {
+      auditService.log({
+        action: 'DOCUMENT_VIEW',
+        actorId: req.user ? req.user.id : 'ANONYMOUS',
+        actorName: req.user ? req.user.name : 'User',
+        actorRole: req.user ? req.user.role : 'User',
+        targetId: doc.id,
+        documentId: doc.id,
+        details: {
+          title: doc.title,
+          originalFilename,
+          mimeType,
+          studentId: doc.studentId
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Audit view error:', auditErr.message);
+    }
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(originalFilename)}"`);
@@ -184,10 +223,29 @@ router.get('/:id/view', (req, res) => {
  */
 router.get('/:id/preview', (req, res) => {
   try {
-    const { filePath, originalFilename, mimeType } = documentService.getAuthorizedFile(
+    const { filePath, originalFilename, mimeType, document: doc } = documentService.getAuthorizedFile(
       req.params.id,
       req.user
     );
+
+    try {
+      auditService.log({
+        action: 'DOCUMENT_PREVIEW',
+        actorId: req.user ? req.user.id : 'ANONYMOUS',
+        actorName: req.user ? req.user.name : 'User',
+        actorRole: req.user ? req.user.role : 'User',
+        targetId: doc.id,
+        documentId: doc.id,
+        details: {
+          title: doc.title,
+          originalFilename,
+          mimeType,
+          studentId: doc.studentId
+        }
+      });
+    } catch (auditErr) {
+      console.warn('Audit preview error:', auditErr.message);
+    }
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(originalFilename)}"`);
