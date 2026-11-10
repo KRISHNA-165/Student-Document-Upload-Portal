@@ -1685,6 +1685,13 @@ async function switchUser(userId) {
         sessionStorage.setItem('af_token', authToken);
       }
       renderCurrentUser();
+      if (currentUser.role === 'Faculty') {
+        switchTab('facultyTab');
+      } else if (currentUser.role === 'Admin') {
+        switchTab('adminUsersTab');
+      } else {
+        switchTab('dashboardTab');
+      }
       showAlert(`Switched session to: ${currentUser.name} (${currentUser.role})`, 'success');
       await refreshAllData();
     }
